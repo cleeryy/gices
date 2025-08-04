@@ -34,9 +34,7 @@ export function ChartsSection({ stats }: ChartsSectionProps) {
   const calculateCurrentMonthByDay = () => {
     if (!stats) return [];
 
-    // ---- Test sur juillet : décommenter la ligne ci-dessous pour forcer juillet, sinon laisser la suivante ----
-    const now = new Date(2025, 6, 1); // Pour tester juillet
-    // const now = new Date(); // Mois réel (août si on ne force pas)
+    const now = new Date(); // Mois réel (août si on ne force pas)
 
     const year = now.getFullYear();
     const month = now.getMonth(); // 0-based
