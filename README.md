@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Application de Suivi du Courrier
 
-## Getting Started
+Une application fullstack moderne pour la gestion et le suivi du courrier physique et électronique, développée avec Next.js, TypeScript, et Prisma.
 
-First, run the development server:
+## 🚀 Fonctionnalités Principales
 
-```bash
+- **Gestion complète du courrier** : physique et électronique
+- **Authentification sécurisée** avec NextAuth.js
+- **Interface moderne** avec shadcn/ui
+- **API RESTful** pour intégrations tierces
+- **Tableaux de bord** et statistiques
+- **Système de notifications** par email
+- **Gestion des rôles** et permissions
+- **Conteneurisation Docker** complète
+
+## 🛠️ Stack Technique
+
+- **Frontend/Backend** : Next.js 14 (TypeScript)
+- **Base de données** : MySQL 8.0
+- **ORM** : Prisma
+- **Authentification** : NextAuth.js
+- **UI** : shadcn/ui + Tailwind CSS
+- **Conteneurisation** : Docker + Docker Compose
+- **CI/CD** : GitHub Actions
+- **Déploiement** : Watchtower (auto-update)
+
+## 📋 Prérequis
+
+- Node.js 18.x ou supérieur
+- Docker et Docker Compose
+- MySQL 8.0 (si installation locale)
+- Git
+
+## ⚡ Démarrage Rapide
+
+```
+# Cloner le repository
+git clone https://github.com/votre-org/courrier-app.git
+cd courrier-app
+
+# Démarrer avec Docker
+docker-compose up -d
+
+# Ou installation locale
+npm install
+cp .env.example .env.local
+npm run db:migrate
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+L'application sera accessible sur `http://localhost:3000`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📚 Documentation
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- [Guide d'Installation](./docs/INSTALLATION.md)
+- [Configuration](./docs/CONFIGURATION.md)
+- [Guide Utilisateur](./docs/UTILISATION.md)
+- [Documentation API](./docs/API.md)
+- [Guide de Déploiement](./docs/DEPLOIEMENT.md)
+- [Guide Développeur](./docs/DEVELOPPEMENT.md)
+- [Migration des Données](./docs/MIGRATION.md)
+- [Sécurité](./docs/SECURITE.md)
+- [FAQ](./docs/FAQ.md)
 
-## Learn More
+## 🤝 Contribution
 
-To learn more about Next.js, take a look at the following resources:
+Les contributions sont les bienvenues ! Consultez le [Guide Développeur](./docs/DEVELOPPEMENT.md) pour plus d'informations.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📄 Licence
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
 
-## Deploy on Vercel
+## 🆘 Support
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Pour toute question ou problème, consultez la [FAQ](./docs/FAQ.md) ou ouvrez une issue sur GitHub.

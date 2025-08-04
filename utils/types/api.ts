@@ -1,0 +1,67 @@
+export interface PaginationParams {
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}
+
+export interface PaginationResult<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
+
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+}
+
+export interface CreateUserData {
+  id: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  serviceId: number;
+}
+
+export interface UpdateUserData {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  serviceId?: number;
+  isActive?: boolean;
+}
+
+export interface CreateServiceData {
+  name: string;
+  code: string;
+  mailType: "IN" | "OUT" | "BOTH";
+}
+
+export interface CreateMailInData {
+  date: Date;
+  subject: string;
+  needsMayor?: boolean;
+  needsDgs?: boolean;
+  serviceIds?: number[];
+  councilIds?: number[];
+  contactIds?: number[];
+}
+
+export interface CreateMailOutData {
+  date: Date;
+  subject: string;
+  reference: string;
+  serviceId: number;
+  userId: string;
+  contactIds?: number[];
+}

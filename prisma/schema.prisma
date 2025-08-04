@@ -1,0 +1,263 @@
+datasource db {
+  provider = "postgres"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// === AUTHENTIFICATION (NextAuth + Custom) ===
+model User {
+  id       String  @id @unique @db.VarChar(4) // Exactement 4 lettres
+  password String  @db.VarChar(255)           // Hash sécurisé
+  
+  // Informations personnelles
+  firstName String  @db.VarChar(100)
+  lastName  String  @db.VarChar(100)
+  email     String? @unique @db.VarChar(255)
+  isActive  Boolean @default(true)
+  
+  // Relations
+  serviceId Int
+  service   Service @relation(fields: [serviceId], references: [id])
+  
+  // Gestion du courrier
+  sentMails     MailOut[]
+  receivedMails UserReceivedMail[]
+  
+  // NextAuth
+  accounts Account[]
+  sessions Session[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Admin {
+  id       Int     @id @default(autoincrement())
+  username String  @unique @db.VarChar(50)
+  password String  @db.VarChar(255) // Bcrypt au lieu de MD5
+  isActive Boolean @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("admins")
+}
+
+// === STRUCTURE ORGANISATIONNELLE ===
+model Service {
+  id            Int         @id @default(autoincrement())
+  name          String      @unique @db.VarChar(100)
+  code          String      @unique @db.VarChar(10) // "RH", "DGS", etc.
+  mailType      MailType    // IN, OUT, ou BOTH
+  isActive      Boolean     @default(true)
+  
+  // Relations
+  users         User[]
+  receivedMails ServiceReceivedMail[]
+  sentMails     MailOut[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("services")
+}
+
+model Council {
+  id          Int     @id @default(autoincrement())
+  firstName   String  @db.VarChar(100)
+  lastName    String  @db.VarChar(100)
+  position    String  @db.VarChar(150) // "1er adjoint", "Conseiller municipal"
+  login       String  @unique @db.VarChar(20)
+  isActive    Boolean @default(true)
+  
+  // Relations
+  mailCopies  MailCopy[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("council_members")
+}
+
+// === GESTION DU COURRIER ===
+model MailIn {
+  id          Int      @id @default(autoincrement())
+  date        DateTime @db.Date
+  subject     String   @db.Text
+  needsMayor  Boolean  @default(false)
+  needsDgs    Boolean  @default(false)
+  
+  // Relations
+  copies            MailCopy[]
+  services          ServiceReceivedMail[]
+  recipients        MailInRecipient[]
+  userReceivedMails UserReceivedMail[]  // ← Relation inverse manquante
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("mail_in")
+}
+
+model MailOut {
+  id        Int      @id @default(autoincrement())
+  date      DateTime @db.Date
+  subject   String   @db.Text
+  reference String   @db.VarChar(50)
+  
+  // Relations
+  serviceId Int
+  service   Service @relation(fields: [serviceId], references: [id])
+  userId    String  @db.VarChar(4)
+  user      User    @relation(fields: [userId], references: [id])
+  
+  recipients MailOutRecipient[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("mail_out")
+}
+
+// === ANNUAIRES ===
+model ContactIn {
+  id          Int    @id @default(autoincrement())
+  name        String @db.VarChar(255)
+  isActive    Boolean @default(true)
+  
+  mailsReceived MailInRecipient[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("contacts_in")
+}
+
+model ContactOut {
+  id        Int    @id @default(autoincrement())
+  name      String @db.VarChar(255)
+  isActive  Boolean @default(true)
+  
+  mailsReceived MailOutRecipient[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("contacts_out")
+}
+
+// === TABLES DE LIAISON (Relations Many-to-Many) ===
+model MailCopy {
+  councilId Int
+  mailInId  Int
+  
+  council Council @relation(fields: [councilId], references: [id])
+  mailIn  MailIn  @relation(fields: [mailInId], references: [id])
+  
+  createdAt DateTime @default(now())
+
+  @@id([councilId, mailInId])
+  @@map("mail_copies")
+}
+
+model ServiceReceivedMail {
+  serviceId Int
+  mailInId  Int
+  
+  service Service @relation(fields: [serviceId], references: [id])
+  mailIn  MailIn  @relation(fields: [mailInId], references: [id])
+  
+  createdAt DateTime @default(now())
+
+  @@id([serviceId, mailInId])
+  @@map("service_received_mails")
+}
+
+model UserReceivedMail {
+  userId   String @db.VarChar(4)
+  mailInId Int
+  isRead   Boolean @default(false)
+  
+  user   User   @relation(fields: [userId], references: [id])
+  mailIn MailIn @relation(fields: [mailInId], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([userId, mailInId])
+  @@map("user_received_mails")
+}
+
+model MailInRecipient {
+  mailInId  Int
+  contactId Int
+  
+  mailIn  MailIn    @relation(fields: [mailInId], references: [id])
+  contact ContactIn @relation(fields: [contactId], references: [id])
+
+  @@id([mailInId, contactId])
+  @@map("mail_in_recipients")
+}
+
+model MailOutRecipient {
+  mailOutId Int
+  contactId Int
+  
+  mailOut MailOut    @relation(fields: [mailOutId], references: [id])
+  contact ContactOut @relation(fields: [contactId], references: [id])
+
+  @@id([mailOutId, contactId])
+  @@map("mail_out_recipients")
+}
+
+// === ENUMS ===
+enum MailType {
+  IN   // Courrier entrant seulement
+  OUT  // Courrier sortant seulement
+  BOTH // Les deux
+}
+
+// === NEXTAUTH (requis) ===
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @db.VarChar(4)
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String   @db.VarChar(4)
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
