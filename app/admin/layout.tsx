@@ -16,10 +16,6 @@ export default function AdminLayout({
     if (status === "unauthenticated") {
       router.push("/login");
     }
-    // TODO: Ajouter ici la vérification des droits admin
-    // if (session && !session.user.isAdmin) {
-    //   router.push("/dashboard");
-    // }
   }, [status, session, router]);
 
   if (status === "loading") {
