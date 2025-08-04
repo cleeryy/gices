@@ -25,6 +25,7 @@ declare module "next-auth" {
       code: string;
     };
     serviceId: number;
+    role: "ADMIN" | "USER";
   }
 }
 

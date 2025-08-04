@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { signIn, getSession, useSession } from "next-auth/react";
 import { redirect, useRouter } from "next/navigation";
@@ -30,9 +30,11 @@ export function LoginForm({
 }: React.ComponentProps<"div">) {
   const { status } = useSession();
 
-  if (status === "authenticated") {
-    redirect("/");
-  }
+  useEffect(() => {
+    if (status === "authenticated") {
+      redirect("/");
+    }
+  }, [status]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,7 +78,6 @@ export function LoginForm({
         // Connexion réussie - vérifier la session et rediriger
         const session = await getSession();
         if (session) {
-          console.log("Connexion réussie:", session.user);
           router.push("/dashboard"); // Redirige vers ton dashboard
           router.refresh();
         }

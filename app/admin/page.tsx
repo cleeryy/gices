@@ -30,17 +30,6 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string>("overview");
 
-  // Vérification d'authentification et droits admin
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-    }
-    // TODO: Ajouter vérification droits admin
-    // if (session && !session.user.isAdmin) {
-    //   router.push("/dashboard");
-    // }
-  }, [status, session, router]);
-
   // Chargement des statistiques administrateur
   useEffect(() => {
     const loadAdminStats = async () => {

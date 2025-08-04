@@ -9,14 +9,17 @@ generator client {
 
 // === AUTHENTIFICATION (NextAuth + Custom) ===
 model User {
-  id       String  @id @unique @db.VarChar(4) // Exactement 4 lettres
-  password String  @db.VarChar(255)           // Hash sécurisé
+  id       String   @id @unique @db.VarChar(4) // Exactement 4 lettres
+  password String   @db.VarChar(255)           // Hash sécurisé
   
   // Informations personnelles
-  firstName String  @db.VarChar(100)
-  lastName  String  @db.VarChar(100)
-  email     String? @unique @db.VarChar(255)
-  isActive  Boolean @default(true)
+  firstName String   @db.VarChar(100)
+  lastName  String   @db.VarChar(100)
+  email     String?  @unique @db.VarChar(255)
+  isActive  Boolean  @default(true)
+  
+  // NOUVEAU : Système de rôles (par défaut USER)
+  role      UserRole @default(USER)
   
   // Relations
   serviceId Int
@@ -34,18 +37,6 @@ model User {
   updatedAt DateTime @updatedAt
 
   @@map("users")
-}
-
-model Admin {
-  id       Int     @id @default(autoincrement())
-  username String  @unique @db.VarChar(50)
-  password String  @db.VarChar(255) // Bcrypt au lieu de MD5
-  isActive Boolean @default(true)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("admins")
 }
 
 // === STRUCTURE ORGANISATIONNELLE ===
@@ -96,7 +87,7 @@ model MailIn {
   copies            MailCopy[]
   services          ServiceReceivedMail[]
   recipients        MailInRecipient[]
-  userReceivedMails UserReceivedMail[]  // ← Relation inverse manquante
+  userReceivedMails UserReceivedMail[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -216,6 +207,11 @@ model MailOutRecipient {
 }
 
 // === ENUMS ===
+enum UserRole {
+  USER  // Utilisateur standard (par défaut)
+  ADMIN // Administrateur
+}
+
 enum MailType {
   IN   // Courrier entrant seulement
   OUT  // Courrier sortant seulement

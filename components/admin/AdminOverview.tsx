@@ -555,7 +555,7 @@ export function AdminOverview({ stats, onSectionChange }: AdminOverviewProps) {
 
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Version</span>
-                <Badge variant="outline">v2.1.0</Badge>
+                <Badge variant="outline">v1.1.0</Badge>
               </div>
 
               <div className="flex items-center justify-between">

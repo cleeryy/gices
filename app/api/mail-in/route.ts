@@ -13,9 +13,6 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
 
-    console.log(searchParams.toString());
-
-    // ✅ CORRIGÉ: Tous les paramètres sont récupérés ici
     const query = searchParams.get("query");
     const page = parseNumber(searchParams.get("page"));
     const limit = parseNumber(searchParams.get("limit"));

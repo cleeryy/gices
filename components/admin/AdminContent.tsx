@@ -14,7 +14,6 @@ export function AdminContent({
   stats,
   onSectionChange,
 }: AdminContentProps) {
-  // 🔥 CONDITION AVANT TOUS LES HOOKS
   if (activeSection === "overview") {
     return (
       <AdminOverview
@@ -24,6 +23,5 @@ export function AdminContent({
     );
   }
 
-  // 🔥 SI CE N'EST PAS OVERVIEW, AFFICHER LE TABLEAU
   return <AdminDataTable activeSection={activeSection} stats={stats} />;
 }

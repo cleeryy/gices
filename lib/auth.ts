@@ -24,17 +24,14 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         try {
           if (!credentials?.id || !credentials?.password) {
-            console.log("❌ Credentials manquantes");
             return null;
           }
 
           if (!validateUserId(credentials.id)) {
-            console.log("❌ Format ID invalide:", credentials.id);
             return null;
           }
 
           if (!validatePassword(credentials.password)) {
-            console.log("❌ Format password invalide");
             return null;
           }
 
@@ -57,7 +54,6 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (!user) {
-            console.log("❌ Utilisateur non trouvé:", credentials.id);
             return null;
           }
 
@@ -67,11 +63,9 @@ export const authOptions: NextAuthOptions = {
           );
 
           if (!isPasswordValid) {
-            console.log("❌ Mot de passe invalide pour:", credentials.id);
+            "❌ Mot de passe invalide pour:", credentials.id;
             return null;
           }
-
-          console.log("✅ Connexion réussie pour:", user.id);
 
           return {
             id: user.id,
@@ -81,6 +75,7 @@ export const authOptions: NextAuthOptions = {
             lastName: user.lastName,
             service: user.service,
             serviceId: user.serviceId,
+            role: user.role,
           };
         } catch (error) {
           console.error("💥 Erreur d'authentification:", error);
@@ -92,23 +87,23 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        console.log("🎟️ Création JWT pour:", user.id);
         token.id = user.id;
         token.firstName = (user as any).firstName;
         token.lastName = (user as any).lastName;
         token.service = (user as any).service;
         token.serviceId = (user as any).serviceId;
+        token.role = (user as any).role;
       }
       return token;
     },
     async session({ session, token }) {
       if (token) {
-        console.log("🔒 Création session pour:", token.id);
         (session.user as any).id = token.id;
         (session.user as any).firstName = token.firstName;
         (session.user as any).lastName = token.lastName;
         (session.user as any).service = token.service;
         (session.user as any).serviceId = token.serviceId;
+        (session.user as any).role = token.role;
       }
       return session;
     },

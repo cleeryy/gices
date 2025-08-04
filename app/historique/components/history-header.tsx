@@ -1,10 +1,4 @@
 import { PrintMailsDialog } from "@/components/historique/PrintMailsDialog";
-import { Button } from "@/components/ui/button";
-import { IconPrinter } from "@tabler/icons-react";
-
-const handlePrint = () => {
-  console.log("Printing!");
-};
 
 export function HistoryHeader() {
   return (

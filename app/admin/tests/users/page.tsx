@@ -99,7 +99,6 @@ export default function UsersTestPage() {
 
   // Soumettre le formulaire (création ou modification)
   const onSubmit = async (data: UserFormData) => {
-    console.log("SUBMITTING");
     setError(null);
     try {
       const method = editing ? "PUT" : "POST";

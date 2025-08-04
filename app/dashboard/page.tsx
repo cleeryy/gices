@@ -129,8 +129,6 @@ export default function DashboardPage() {
           fetch("/api/mail-out").then((r) => r.json()), // Sans limit pour avoir TOUS les mails
         ]);
 
-        console.log("Service data data: " + servicesRes.data?.data);
-        console.log("Service data : " + servicesRes.data);
         const servicesData = servicesRes.success
           ? servicesRes.data?.data || servicesRes.data || []
           : [];

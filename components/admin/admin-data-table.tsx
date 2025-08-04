@@ -302,6 +302,19 @@ export function AdminDataTable({ activeSection, stats }: AdminDataTableProps) {
             </Badge>
           ),
         },
+        {
+          accessorKey: "role",
+          header: "Rôle",
+          cell: ({ row }) => (
+            <Badge
+              variant={
+                row.original.role === "ADMIN" ? "destructive" : "outline"
+              }
+            >
+              {row.original.role === "ADMIN" ? "ADMIN" : "USER"}
+            </Badge>
+          ),
+        },
       ],
       services: [
         {

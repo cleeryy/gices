@@ -24,6 +24,8 @@ export interface ApiResponse<T = any> {
   message?: string;
 }
 
+export type UserRole = "USER" | "ADMIN";
+
 export interface CreateUserData {
   id: string;
   password: string;
@@ -31,6 +33,7 @@ export interface CreateUserData {
   lastName: string;
   email?: string;
   serviceId: number;
+  role?: UserRole;
 }
 
 export interface UpdateUserData {
@@ -39,6 +42,7 @@ export interface UpdateUserData {
   email?: string;
   serviceId?: number;
   isActive?: boolean;
+  role?: UserRole;
 }
 
 export interface CreateServiceData {

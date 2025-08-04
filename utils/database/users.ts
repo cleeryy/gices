@@ -35,8 +35,6 @@ export async function createUser(data: CreateUserData) {
       throw new ValidationError("Invalid email format");
     }
 
-    console.log("existance");
-
     // Vérifier l'existence
     const existingUser = await prisma.user.findUnique({
       where: { id: data.id },
@@ -68,6 +66,7 @@ export async function createUser(data: CreateUserData) {
         lastName: data.lastName,
         email: data.email,
         serviceId: Number(data.serviceId),
+        role: data.role ?? "USER",
       },
       include: {
         service: true,

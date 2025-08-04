@@ -135,7 +135,6 @@ export default function ServicesTestPage() {
   };
 
   const handleDelete = async (id: number) => {
-    console.log("id: $d", id);
     setError(null);
     try {
       const res = await fetch(`/api/services/${id}`, { method: "DELETE" });
