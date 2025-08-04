@@ -63,7 +63,6 @@ export const authOptions: NextAuthOptions = {
           );
 
           if (!isPasswordValid) {
-            "❌ Mot de passe invalide pour:", credentials.id;
             return null;
           }
 
