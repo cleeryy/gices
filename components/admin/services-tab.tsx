@@ -5,6 +5,15 @@ import { DataTable } from "./data-table";
 import { ServiceDrawer } from "./service-drawer";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 interface Service {
   id: number;
@@ -20,6 +29,10 @@ export function ServicesTab() {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Pour le dialog de suppression
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null);
 
   const fetchServices = async () => {
     setLoading(true);
@@ -49,21 +62,30 @@ export function ServicesTab() {
     setSelectedService(null);
     setIsDrawerOpen(true);
   };
-  const handleDelete = async (svc: Service) => {
-    if (confirm("Supprimer ce service ?")) {
-      try {
-        const response = await fetch(`/api/services/${svc.id}`, {
-          method: "DELETE",
-        });
-        const result = await response.json();
-        if (result.success) {
-          toast.success("Service supprimé");
-          fetchServices();
-        } else toast.error(result.message || "Erreur lors de la suppression");
-      } catch {
-        toast.error("Erreur lors de la suppression");
-      }
+
+  // Ouvre le dialog de confirmation au lieu de delete direct
+  const confirmDelete = (svc: Service) => {
+    setServiceToDelete(svc);
+    setDeleteDialogOpen(true);
+  };
+
+  // Suppression réelle, appelée seulement sur "Supprimer" dans le Dialog
+  const handleDelete = async () => {
+    if (!serviceToDelete) return;
+    try {
+      const response = await fetch(`/api/services/${serviceToDelete.id}`, {
+        method: "DELETE",
+      });
+      const result = await response.json();
+      if (result.success) {
+        toast.success("Service supprimé");
+        fetchServices();
+      } else toast.error(result.message || "Erreur lors de la suppression");
+    } catch {
+      toast.error("Erreur lors de la suppression");
     }
+    setDeleteDialogOpen(false);
+    setServiceToDelete(null);
   };
 
   const columns = [
@@ -95,7 +117,7 @@ export function ServicesTab() {
         title="Services"
         description="Gérez les services"
         onEdit={handleEdit}
-        onDelete={handleDelete}
+        onDelete={confirmDelete}
         onAdd={handleAdd}
         searchKey="name"
         loading={loading}
@@ -109,6 +131,31 @@ export function ServicesTab() {
           setIsDrawerOpen(false);
         }}
       />
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Supprimer ce service ?</DialogTitle>
+            <DialogDescription>
+              Cette action est{" "}
+              <span className="font-bold text-destructive">irréversible</span>.
+              <br />
+              Es-tu sûr de vouloir supprimer{" "}
+              <strong>{serviceToDelete?.name}</strong> ?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+            >
+              Annuler
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} autoFocus>
+              Supprimer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
