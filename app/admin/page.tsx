@@ -3,7 +3,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UsersTab } from "@/components/admin/users-tab";
 import { ServicesTab } from "@/components/admin/services-tab";
-// import { CouncilTab } from "@/components/admin/council-tab";
+import { CouncilTab } from "@/components/admin/council-tab";
 
 export default function AdminPage() {
   return (
@@ -14,7 +14,7 @@ export default function AdminPage() {
         </header>
         <main className="flex-1 p-4">
           <Tabs defaultValue="users" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="users">Utilisateurs</TabsTrigger>
               <TabsTrigger value="services">Services</TabsTrigger>
               <TabsTrigger value="council">Conseil</TabsTrigger>
@@ -26,9 +26,9 @@ export default function AdminPage() {
             <TabsContent value="services">
               <ServicesTab />
             </TabsContent>
-            {/* <TabsContent value="council">
+            <TabsContent value="council">
               <CouncilTab />
-            </TabsContent> */}
+            </TabsContent>
           </Tabs>
         </main>
       </div>
