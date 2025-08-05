@@ -15,13 +15,14 @@ export interface DashboardStats {
 }
 
 export interface MailInFormData {
-  date: string;
+  date: Date;
   subject: string;
   needsMayor: boolean;
   needsDgs: boolean;
-  serviceIds: string;
-  councilIds: string;
-  contactIds: string;
+  serviceIds: number[];
+  councilIds: number[];
+  contactIds: number[];
+  newContacts: string[];
 }
 
 export interface MailOutFormData {

@@ -57,7 +57,7 @@ export default function DashboardPage() {
         const [servicesRes, contactsInRes, contactsOutRes, councilRes] =
           await Promise.all([
             fetch("/api/services").then((r) => r.json()),
-            fetch("/api/contacts-in").then((r) => r.json()),
+            fetch("/api/contacts-in?limit=100000").then((r) => r.json()),
             fetch("/api/contacts-out").then((r) => r.json()),
             fetch("/api/council").then((r) => r.json()),
           ]);
