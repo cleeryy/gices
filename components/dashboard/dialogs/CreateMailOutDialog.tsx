@@ -159,7 +159,7 @@ export function CreateMailOutDialog({
 
           <div className="space-y-2">
             <Label htmlFor="contactIds-out">
-              Destinataires (IDs séparés par virgule)
+              Expéditeurs (IDs séparés par virgule)
             </Label>
             <Input
               id="contactIds-out"

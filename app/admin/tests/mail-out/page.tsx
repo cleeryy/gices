@@ -324,7 +324,7 @@ export default function MailOutTestPage() {
                   <TableHead>Objet</TableHead>
                   <TableHead>Service</TableHead>
                   <TableHead>Utilisateur</TableHead>
-                  <TableHead>Destinataires</TableHead>
+                  <TableHead>Expéditeurs</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>

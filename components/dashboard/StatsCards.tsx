@@ -42,7 +42,7 @@ export function StatsCards({ stats, showAdditional = false }: StatsCardsProps) {
     // {
     //   title: "Contacts sortants",
     //   value: stats?.totalContactsOut || 0,
-    //   description: "Destinataires enregistrés",
+    //   description: "Expéditeurs enregistrés",
     //   icon: Send,
     // },
     {

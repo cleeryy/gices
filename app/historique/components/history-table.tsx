@@ -363,7 +363,7 @@ export function HistoryTable({
               <Separator />
               <div className="flex gap-6">
                 <div className="min-w-[110px] text-muted-foreground font-medium">
-                  Destinataires :
+                  Expéditeurs :
                 </div>
                 <div>{renderRecipients(selectedItem)}</div>
               </div>
@@ -453,7 +453,7 @@ export function HistoryTable({
             </TableHead>
             <TableHead className="text-foreground font-semibold">
               Copies <span className="text-muted-foreground mx-1">/</span>{" "}
-              Destinataires
+              Expéditeurs
             </TableHead>
             <TableHead className="text-foreground font-semibold w-[88px] text-center">
               Actions
@@ -499,7 +499,7 @@ export function HistoryTable({
                 </div>
                 {renderCopies(item)}
                 <div className="mt-1 mb-1 font-semibold text-xs text-muted-foreground">
-                  Destinataires :
+                  Expéditeurs :
                 </div>
                 {renderRecipients(item)}
               </TableCell>

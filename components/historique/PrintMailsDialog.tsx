@@ -230,7 +230,7 @@ export const PrintMailsDialog: React.FC = () => {
                   <th>Statut</th>
                   <th>Services</th>
                   <th>Copies</th>
-                  <th>Destinataires</th>
+                  <th>Expéditeurs</th>
                 </tr>
               </thead>
               <tbody>
