@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle, Edit, X, Save, Loader2, AlertCircle } from "lucide-react";
 import { ViewMailDialog } from "@/components/types/dashboard";
+import LoadIfAdmin from "@/components/admin/LoadIfAdmin";
 
 interface MailViewDialogProps {
   viewDialog: ViewMailDialog;
@@ -128,14 +129,16 @@ export function MailViewDialog({
             </div>
             <div className="flex items-center space-x-2">
               {!editMode ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setEditMode(true)}
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Modifier
-                </Button>
+                <LoadIfAdmin>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditMode(true)}
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Modifier
+                  </Button>
+                </LoadIfAdmin>
               ) : (
                 <Button
                   variant="outline"

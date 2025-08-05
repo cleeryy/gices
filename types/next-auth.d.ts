@@ -40,5 +40,6 @@ declare module "next-auth/jwt" {
       code: string;
     };
     serviceId: number;
+    role: "ADMIN" | "USER";
   }
 }

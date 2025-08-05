@@ -12,6 +12,7 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { Session } from "next-auth";
 import { IconLogin } from "@tabler/icons-react";
+import LoadIfAdmin from "./admin/LoadIfAdmin";
 
 interface HeaderProps {
   title?: string;
@@ -58,6 +59,19 @@ export function Header({ title = "GICES", onNotificationClick }: HeaderProps) {
             >
               Historique
             </Link>
+            <LoadIfAdmin>
+              <Link
+                href="/admin"
+                className={cn(
+                  "transition-colors hover:text-foreground/80",
+                  pathname === "/admin"
+                    ? "text-foreground"
+                    : "text-foreground/60"
+                )}
+              >
+                Administration
+              </Link>
+            </LoadIfAdmin>
           </nav>
         </div>
 

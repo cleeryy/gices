@@ -30,6 +30,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import LoadIfAdmin from "@/components/admin/LoadIfAdmin";
 
 interface MailInItem {
   id: number;
@@ -369,15 +370,17 @@ export function HistoryTable({
               </div>
             </div>
             <DrawerFooter className="gap-2 pb-6">
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => setEditMode(true)}
-              >
-                <Pencil className="inline w-4 h-4 mr-2" />
-                Modifier
-              </Button>
+              <LoadIfAdmin>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setEditMode(true)}
+                >
+                  <Pencil className="inline w-4 h-4 mr-2" />
+                  Modifier
+                </Button>
+              </LoadIfAdmin>
               <Button
                 type="button"
                 variant="secondary"
@@ -525,13 +528,15 @@ export function HistoryTable({
                       <Eye className="mr-2 h-4 w-4" />
                       Voir détails
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="hover:bg-accent"
-                      onClick={() => handleOpenEdit(item)}
-                    >
-                      <Pencil className="mr-2 h-4 w-4" />
-                      Modifier
-                    </DropdownMenuItem>
+                    <LoadIfAdmin>
+                      <DropdownMenuItem
+                        className="hover:bg-accent"
+                        onClick={() => handleOpenEdit(item)}
+                      >
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Modifier
+                      </DropdownMenuItem>
+                    </LoadIfAdmin>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>
