@@ -4,7 +4,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UsersTab } from "@/components/admin/users-tab";
 import { ServicesTab } from "@/components/admin/services-tab";
 // import { CouncilTab } from "@/components/admin/council-tab";
-// import { ContactsTab } from "@/components/admin/contacts-tab";
 
 export default function AdminPage() {
   return (

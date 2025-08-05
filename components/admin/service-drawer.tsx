@@ -1,26 +1,24 @@
-"use client";
-
-import { useState, useEffect } from "react";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerFooter,
+} from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
-  SelectContent,
-  SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectContent,
+  SelectItem,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { useState, useEffect } from "react";
 
 interface Service {
   id?: number;
@@ -52,8 +50,20 @@ export function ServiceDrawer({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (service) setFormData(service);
-    else setFormData({ name: "", code: "", mailType: "BOTH", isActive: true });
+    if (service)
+      setFormData({
+        name: service.name,
+        code: service.code,
+        mailType: service.mailType,
+        isActive: service.isActive,
+      });
+    else
+      setFormData({
+        name: "",
+        code: "",
+        mailType: "BOTH",
+        isActive: true,
+      });
   }, [service]);
 
   const handleSubmit = async () => {
@@ -62,11 +72,11 @@ export function ServiceDrawer({
       const method = service && service.id ? "PUT" : "POST";
       const url =
         service && service.id ? `/api/services/${service.id}` : "/api/services";
-      console.log(JSON.stringify(formData));
+      const dataToSend = { ...formData };
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(dataToSend),
       });
       if (!response.ok) throw new Error();
       toast.success(service ? "Service modifié" : "Service créé");
@@ -78,16 +88,17 @@ export function ServiceDrawer({
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[400px] sm:w-[540px]">
-        <SheetHeader>
-          <SheetTitle>
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="p-4">
+        <DrawerHeader>
+          <DrawerTitle>
             {service ? "Modifier un service" : "Ajouter un service"}
-          </SheetTitle>
-          <SheetDescription>
+          </DrawerTitle>
+          <DrawerDescription>
             Renseignez les informations du service
-          </SheetDescription>
-        </SheetHeader>
+          </DrawerDescription>
+        </DrawerHeader>
+
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="name" className="text-right">
@@ -148,12 +159,12 @@ export function ServiceDrawer({
             />
           </div>
         </div>
-        <SheetFooter>
+        <DrawerFooter>
           <Button onClick={handleSubmit} disabled={loading}>
             {loading ? "Sauvegarde..." : "Sauvegarder"}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 }

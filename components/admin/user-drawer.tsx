@@ -1,26 +1,30 @@
-"use client";
-
-import { useState, useEffect } from "react";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerFooter,
+} from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
-  SelectContent,
-  SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectContent,
+  SelectItem,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { useState, useEffect } from "react";
+
+interface Service {
+  id: number;
+  name: string;
+  code: string;
+}
 
 interface User {
   id: string;
@@ -34,13 +38,6 @@ interface User {
     name: string;
     code: string;
   };
-  password?: string;
-}
-
-interface Service {
-  id: number;
-  name: string;
-  code: string;
 }
 
 interface UserDrawerProps {
@@ -50,17 +47,6 @@ interface UserDrawerProps {
   onSuccess: () => void;
 }
 
-interface Service {
-  id: number;
-  name: string;
-  code: string;
-  mailType: string;
-  isActive: boolean;
-  _count: {
-    users: number;
-  };
-}
-
 export function UserDrawer({
   user,
   open,
@@ -68,9 +54,8 @@ export function UserDrawer({
   onSuccess,
 }: UserDrawerProps) {
   const [services, setServices] = useState<Service[]>([]);
-  const [loading, setLoading] = useState(false);
   const [servicesLoading, setServicesLoading] = useState(true);
-
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<{
     id: string;
     firstName: string;
@@ -85,50 +70,26 @@ export function UserDrawer({
     firstName: "",
     lastName: "",
     email: "",
-    role: "USER" as "USER" | "ADMIN",
+    role: "USER",
     isActive: true,
     serviceId: 0,
     password: "",
   });
 
   useEffect(() => {
-    const fetchServices = async () => {
-      setServicesLoading(true);
-      try {
-        // ✅ Récupère tous les services avec une limite élevée pour éviter la pagination
-        const response = await fetch("/api/services?limit=1000");
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const result = await response.json();
-        console.log("Services API response:", result); // Debug
-
-        // ✅ Gestion de la structure de réponse de ton API
-        if (result.success && result.data) {
-          const servicesData = result.data.data; // ← Le tableau est dans data.data
-
-          if (Array.isArray(servicesData)) {
-            setServices(servicesData);
-          } else {
-            console.error("servicesData n'est pas un tableau:", servicesData);
-            setServices([]);
-          }
+    // Fetch all services for the select
+    setServicesLoading(true);
+    fetch("/api/services?limit=1000")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.data && Array.isArray(data.data.data)) {
+          setServices(data.data.data);
         } else {
-          console.error("Réponse API invalide:", result);
           setServices([]);
         }
-      } catch (error) {
-        console.error("Erreur lors du fetch des services:", error);
-        toast.error("Erreur lors du chargement des services");
-        setServices([]);
-      } finally {
-        setServicesLoading(false);
-      }
-    };
-
-    fetchServices();
+      })
+      .catch(() => setServices([]))
+      .finally(() => setServicesLoading(false));
   }, []);
 
   useEffect(() => {
@@ -161,43 +122,39 @@ export function UserDrawer({
     try {
       const method = user ? "PUT" : "POST";
       const url = user ? `/api/users/${user.id}` : "/api/users";
-
+      // Do not send password field for PUT if unchanged
       const dataToSend = { ...formData };
       if (user) delete dataToSend.password;
-
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(dataToSend),
       });
 
-      if (!response.ok) throw new Error("Erreur");
-
+      if (!response.ok) throw new Error();
       toast.success(user ? "Utilisateur modifié" : "Utilisateur créé");
       onSuccess();
-    } catch (error) {
+    } catch {
       toast.error("Erreur lors de la sauvegarde");
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[400px] sm:w-[540px]">
-        <SheetHeader>
-          <SheetTitle>
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="p-4">
+        <DrawerHeader>
+          <DrawerTitle>
             {user ? "Modifier l'utilisateur" : "Nouvel utilisateur"}
-          </SheetTitle>
-          <SheetDescription>
+          </DrawerTitle>
+          <DrawerDescription>
             {user
               ? "Modifiez les informations de l'utilisateur"
               : "Créez un nouvel utilisateur"}
-          </SheetDescription>
-        </SheetHeader>
-
+          </DrawerDescription>
+        </DrawerHeader>
         <div className="grid gap-4 py-4">
-          {/* ID Field */}
+          {/* ID */}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="id" className="text-right">
               ID
@@ -209,10 +166,9 @@ export function UserDrawer({
               className="col-span-3"
               maxLength={4}
               placeholder="4 lettres exactement"
-              disabled={!!user} // Désactiver en mode édition
+              disabled={!!user}
             />
           </div>
-
           {/* Prénom */}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="firstName" className="text-right">
@@ -227,7 +183,6 @@ export function UserDrawer({
               className="col-span-3"
             />
           </div>
-
           {/* Nom */}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="lastName" className="text-right">
@@ -242,7 +197,6 @@ export function UserDrawer({
               className="col-span-3"
             />
           </div>
-
           {/* Email */}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="email" className="text-right">
@@ -258,7 +212,6 @@ export function UserDrawer({
               className="col-span-3"
             />
           </div>
-
           {/* Rôle */}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="role" className="text-right">
@@ -279,16 +232,18 @@ export function UserDrawer({
               </SelectContent>
             </Select>
           </div>
-
-          {/* Service - CORRECTION ICI */}
+          {/* Service */}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="service" className="text-right">
               Service
             </Label>
             <Select
-              value={formData.serviceId.toString()}
+              value={formData.serviceId ? formData.serviceId.toString() : ""}
               onValueChange={(value) =>
-                setFormData({ ...formData, serviceId: parseInt(value) })
+                setFormData({
+                  ...formData,
+                  serviceId: Number(value),
+                })
               }
               disabled={servicesLoading}
             >
@@ -309,8 +264,7 @@ export function UserDrawer({
                 ) : services.length > 0 ? (
                   services.map((service) => (
                     <SelectItem key={service.id} value={service.id.toString()}>
-                      {service.name} ({service.code}) - {service._count.users}{" "}
-                      utilisateurs
+                      {service.name} ({service.code})
                     </SelectItem>
                   ))
                 ) : (
@@ -321,8 +275,7 @@ export function UserDrawer({
               </SelectContent>
             </Select>
           </div>
-
-          {/* Mot de passe pour nouveau user */}
+          {/* Mot de passe (création uniquement) */}
           {!user && (
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="password" className="text-right">
@@ -340,8 +293,7 @@ export function UserDrawer({
               />
             </div>
           )}
-
-          {/* Statut actif */}
+          {/* Actif */}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="isActive" className="text-right">
               Actif
@@ -355,13 +307,12 @@ export function UserDrawer({
             />
           </div>
         </div>
-
-        <SheetFooter>
-          <Button onClick={handleSubmit} disabled={loading || servicesLoading}>
+        <DrawerFooter>
+          <Button onClick={handleSubmit} disabled={loading}>
             {loading ? "Sauvegarde..." : "Sauvegarder"}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 }
