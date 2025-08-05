@@ -49,6 +49,7 @@ export interface CreateServiceData {
   name: string;
   code: string;
   mailType: "IN" | "OUT" | "BOTH";
+  isActive?: boolean;
 }
 
 export interface CreateMailInData {

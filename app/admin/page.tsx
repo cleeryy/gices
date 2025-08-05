@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/admin/app-sidebar";
 import { UsersTab } from "@/components/admin/users-tab";
-// import { ServicesTab } from "@/components/admin/services-tab";
+import { ServicesTab } from "@/components/admin/services-tab";
 // import { MailInTab } from "@/components/admin/mail-in-tab";
 // import { CouncilTab } from "@/components/admin/council-tab";
 // import { ContactsTab } from "@/components/admin/contacts-tab";
@@ -33,18 +33,18 @@ export default function AdminPage() {
               <TabsContent value="users">
                 <UsersTab />
               </TabsContent>
-              {/* <TabsContent value="services">
+              <TabsContent value="services">
                 <ServicesTab />
               </TabsContent>
-              <TabsContent value="mail-in">
+              {/* <TabsContent value="mail-in">
                 <MailInTab />
-              </TabsContent>
-              <TabsContent value="council">
+              </TabsContent> */}
+              {/* <TabsContent value="council">
                 <CouncilTab />
-              </TabsContent>
-              <TabsContent value="contacts">
-                <ContactsTab /> */}
-              {/* </TabsContent> */}
+              </TabsContent> */}
+              {/* <TabsContent value="contacts">
+                <ContactsTab />
+              </TabsContent> */}
             </Tabs>
           </main>
         </div>

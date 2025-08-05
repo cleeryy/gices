@@ -104,7 +104,9 @@ export async function updateService(
       throw new NotFoundError("Service");
     }
 
-    if (data.code && !validateServiceCode(data.code)) {
+    const { name, code, mailType, isActive } = data;
+
+    if (code && !validateServiceCode(code)) {
       throw new ValidationError(
         "Service code must be 2-10 uppercase letters/numbers"
       );
@@ -112,7 +114,12 @@ export async function updateService(
 
     const updatedService = await prisma.service.update({
       where: { id },
-      data,
+      data: {
+        ...(name !== undefined && { name }),
+        ...(code !== undefined && { code }),
+        ...(mailType !== undefined && { mailType }),
+        ...(isActive !== undefined && { isActive }),
+      },
       include: {
         _count: {
           select: {
