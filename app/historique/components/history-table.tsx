@@ -44,6 +44,7 @@ interface MailInItem {
       name: string;
       code: string;
     };
+    type: "INFO" | "SUIVI";
   }[];
   _count: {
     copies: number;
@@ -96,14 +97,13 @@ export function HistoryTable({
   const [editMode, setEditMode] = useState(false);
   const [editedSubject, setEditedSubject] = useState("");
 
-  // Gestion du reset pour laisser vivre l’animation shadcn
   useEffect(() => {
     if (!drawerOpen) {
       const timeout = setTimeout(() => {
         setEditMode(false);
         setSelectedItem(null);
         setEditedSubject("");
-      }, 300); // durée = anim Drawer shadcn (si tu n'as pas modifié)
+      }, 300);
       return () => clearTimeout(timeout);
     }
   }, [drawerOpen]);
@@ -187,30 +187,30 @@ export function HistoryTable({
     return badges;
   };
 
-  const getServicesBadges = (services: MailInItem["services"]) => {
-    if (!services || services.length === 0)
-      return (
-        <span className="text-muted-foreground text-sm">Aucun service</span>
-      );
-    return (
+  // NOUVEAU : helpers pour colonnes INFO et SUIVI
+  const getServicesByType = (
+    services: MailInItem["services"],
+    type: "INFO" | "SUIVI"
+  ) => {
+    if (!services) return [];
+    return services
+      .filter((s) => s.type === type)
+      .map((s) => s.service.code)
+      .filter(Boolean);
+  };
+
+  const renderServiceBadges = (codes: string[]) =>
+    codes.length === 0 ? (
+      <span className="text-muted-foreground text-sm">Aucun</span>
+    ) : (
       <div className="flex flex-wrap gap-1">
-        {services.slice(0, 2).map((serviceRel) => (
-          <Badge
-            key={serviceRel.service.id}
-            variant="outline"
-            className="text-xs"
-          >
-            {serviceRel.service.code}
+        {codes.map((code) => (
+          <Badge key={code} variant="outline" className="text-xs">
+            {code}
           </Badge>
         ))}
-        {services.length > 2 && (
-          <Badge variant="outline" className="text-xs text-muted-foreground">
-            +{services.length - 2}
-          </Badge>
-        )}
       </div>
     );
-  };
 
   const renderCopies = (item: MailInItem) => {
     if (!item.copies || item.copies.length === 0)
@@ -350,9 +350,24 @@ export function HistoryTable({
               <Separator />
               <div className="flex gap-6">
                 <div className="min-w-[110px] text-muted-foreground font-medium">
-                  Services :
+                  Services INFO :
                 </div>
-                <div>{getServicesBadges(selectedItem.services)}</div>
+                <div>
+                  {renderServiceBadges(
+                    getServicesByType(selectedItem.services, "INFO")
+                  )}
+                </div>
+              </div>
+              <Separator />
+              <div className="flex gap-6">
+                <div className="min-w-[110px] text-muted-foreground font-medium">
+                  Services SUIVI :
+                </div>
+                <div>
+                  {renderServiceBadges(
+                    getServicesByType(selectedItem.services, "SUIVI")
+                  )}
+                </div>
               </div>
               <Separator />
               <div className="flex gap-6">
@@ -452,7 +467,10 @@ export function HistoryTable({
               Statut
             </TableHead>
             <TableHead className="text-foreground font-semibold">
-              Services
+              Services INFO
+            </TableHead>
+            <TableHead className="text-foreground font-semibold">
+              Services SUIVI
             </TableHead>
             <TableHead className="text-foreground font-semibold">
               Copies <span className="text-muted-foreground mx-1">/</span>{" "}
@@ -495,7 +513,12 @@ export function HistoryTable({
                   )}
                 </div>
               </TableCell>
-              <TableCell>{getServicesBadges(item.services)}</TableCell>
+              <TableCell>
+                {renderServiceBadges(getServicesByType(item.services, "INFO"))}
+              </TableCell>
+              <TableCell>
+                {renderServiceBadges(getServicesByType(item.services, "SUIVI"))}
+              </TableCell>
               <TableCell className="text-foreground">
                 <div className="mb-1 font-semibold text-xs text-muted-foreground">
                   Copies :
