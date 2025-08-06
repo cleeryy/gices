@@ -52,12 +52,16 @@ export interface CreateServiceData {
   isActive?: boolean;
 }
 
+export interface ServiceDestination {
+  serviceId: number;
+  type: "INFO" | "SUIVI";
+}
 export interface CreateMailInData {
   date: Date;
   subject: string;
   needsMayor?: boolean;
   needsDgs?: boolean;
-  serviceIds?: number[];
+  serviceDestinations?: ServiceDestination[];
   councilIds?: number[];
   contactIds?: number[];
 }

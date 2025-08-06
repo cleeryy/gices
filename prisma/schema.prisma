@@ -159,13 +159,14 @@ model MailCopy {
 model ServiceReceivedMail {
   serviceId Int
   mailInId  Int
+  type      MailDestinationType @default(INFO)
   
   service Service @relation(fields: [serviceId], references: [id])
   mailIn  MailIn  @relation(fields: [mailInId], references: [id])
   
   createdAt DateTime @default(now())
 
-  @@id([serviceId, mailInId])
+  @@id([serviceId, mailInId, type])
   @@map("service_received_mails")
 }
 
@@ -216,6 +217,11 @@ enum MailType {
   IN   // Courrier entrant seulement
   OUT  // Courrier sortant seulement
   BOTH // Les deux
+}
+
+enum MailDestinationType {
+  INFO  // Pour information
+  SUIVI // Pour suivi/action
 }
 
 // === NEXTAUTH (requis) ===

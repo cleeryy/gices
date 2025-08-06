@@ -1,5 +1,9 @@
 import { prisma } from "@/db/prisma";
-import { CreateMailInData, PaginationParams } from "../types/api";
+import {
+  CreateMailInData,
+  PaginationParams,
+  ServiceDestination,
+} from "../types/api";
 import { getPrismaSkipTake, calculatePagination } from "../helpers/pagination";
 import {
   NotFoundError,
@@ -7,12 +11,13 @@ import {
   handlePrismaError,
 } from "../helpers/errors";
 
+// Types d'API
 export interface UpdateMailInData {
   date?: Date;
   subject?: string;
   needsMayor?: boolean;
   needsDgs?: boolean;
-  serviceIds?: number[];
+  serviceDestinations?: ServiceDestination[]; // { serviceId: number; type: 'INFO' | 'SUIVI'; }
   councilIds?: number[];
   contactIds?: number[];
 }
@@ -22,18 +27,20 @@ export interface MailInFilters {
   needsDgs?: boolean;
   dateFrom?: Date;
   dateTo?: Date;
-  serviceIds?: number[]; // ✅ CORRIGÉ: Accepte un tableau d'IDs de services
+  serviceIds?: number[];
+  destinationType?: "INFO" | "SUIVI";
 }
 
 export async function createMailIn(data: CreateMailInData) {
   try {
-    // 🔥 VALIDATION DES RELATIONS AVANT CRÉATION
-    if (data.serviceIds && data.serviceIds.length > 0) {
+    // Validation services
+    if (data.serviceDestinations && data.serviceDestinations.length > 0) {
+      const serviceIds = data.serviceDestinations.map((sd) => sd.serviceId);
       const services = await prisma.service.findMany({
-        where: { id: { in: data.serviceIds }, isActive: true },
+        where: { id: { in: serviceIds }, isActive: true },
       });
-      if (services.length !== data.serviceIds.length) {
-        const missing = data.serviceIds.filter(
+      if (services.length !== serviceIds.length) {
+        const missing = serviceIds.filter(
           (id) => !services.some((s) => s.id === id)
         );
         throw new ValidationError(
@@ -41,6 +48,7 @@ export async function createMailIn(data: CreateMailInData) {
         );
       }
     }
+    // Validation conseillers
     if (data.councilIds && data.councilIds.length > 0) {
       const councils = await prisma.council.findMany({
         where: { id: { in: data.councilIds }, isActive: true },
@@ -54,7 +62,7 @@ export async function createMailIn(data: CreateMailInData) {
         );
       }
     }
-    // 🔥 VALIDATION DES CONTACTS ENTRANTS
+    // Validation contacts
     if (data.contactIds && data.contactIds.length > 0) {
       const contacts = await prisma.contactIn.findMany({
         where: { id: { in: data.contactIds }, isActive: true },
@@ -64,15 +72,13 @@ export async function createMailIn(data: CreateMailInData) {
           (id) => !contacts.some((c) => c.id === id)
         );
         throw new ValidationError(
-          `Contacts entrants inexistants: ${missing.join(
-            ", "
-          )}. Créez-les d'abord !`
+          `Contacts entrants inexistants: ${missing.join(", ")}`
         );
       }
     }
 
     const result = await prisma.$transaction(async (tx) => {
-      // Créer le courrier entrant
+      // Créer mailIn
       const mailIn = await tx.mailIn.create({
         data: {
           date: data.date,
@@ -82,17 +88,17 @@ export async function createMailIn(data: CreateMailInData) {
         },
       });
 
-      // Associer aux services si fournis
-      if (data.serviceIds && data.serviceIds.length > 0) {
+      // Relations services avec le type
+      if (data.serviceDestinations && data.serviceDestinations.length > 0) {
         await tx.serviceReceivedMail.createMany({
-          data: data.serviceIds.map((serviceId) => ({
+          data: data.serviceDestinations.map(({ serviceId, type }) => ({
             serviceId,
             mailInId: mailIn.id,
+            type: type as any,
           })),
         });
       }
-
-      // Associer aux conseillers si fournis
+      // Relations conseillers
       if (data.councilIds && data.councilIds.length > 0) {
         await tx.mailCopy.createMany({
           data: data.councilIds.map((councilId) => ({
@@ -101,8 +107,7 @@ export async function createMailIn(data: CreateMailInData) {
           })),
         });
       }
-
-      // Associer aux contacts si fournis
+      // Relations contacts
       if (data.contactIds && data.contactIds.length > 0) {
         await tx.mailInRecipient.createMany({
           data: data.contactIds.map((contactId) => ({
@@ -111,11 +116,10 @@ export async function createMailIn(data: CreateMailInData) {
           })),
         });
       }
-
       return mailIn;
     });
 
-    // Récupérer le courrier avec toutes ses relations
+    // Récupérer le courrier avec toutes ses relations créées
     return await getMailInById(result.id);
   } catch (error: any) {
     console.error("Erreur détaillée createMailIn:", {
@@ -220,10 +224,13 @@ export async function getAllMailIn(
   if (filters.serviceIds && filters.serviceIds.length > 0) {
     whereClause.services = {
       some: {
-        serviceId: {
-          in: filters.serviceIds,
-        },
+        serviceId: { in: filters.serviceIds },
+        ...(filters.destinationType && { type: filters.destinationType }),
       },
+    };
+  } else if (filters.destinationType) {
+    whereClause.services = {
+      some: { type: filters.destinationType },
     };
   }
 
@@ -286,18 +293,18 @@ export async function updateMailIn(id: number, data: UpdateMailInData) {
     const existingMail = await prisma.mailIn.findUnique({
       where: { id },
     });
-
     if (!existingMail) {
       throw new NotFoundError("Mail");
     }
 
-    // 🔥 VALIDATION DES RELATIONS si elles sont fournies
-    if (data.serviceIds && data.serviceIds.length > 0) {
+    // Validation services
+    if (data.serviceDestinations && data.serviceDestinations.length > 0) {
+      const serviceIds = data.serviceDestinations.map((sd) => sd.serviceId);
       const services = await prisma.service.findMany({
-        where: { id: { in: data.serviceIds }, isActive: true },
+        where: { id: { in: serviceIds }, isActive: true },
       });
-      if (services.length !== data.serviceIds.length) {
-        const missing = data.serviceIds.filter(
+      if (services.length !== serviceIds.length) {
+        const missing = serviceIds.filter(
           (id) => !services.some((s) => s.id === id)
         );
         throw new ValidationError(
@@ -333,36 +340,33 @@ export async function updateMailIn(id: number, data: UpdateMailInData) {
     }
 
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Mettre à jour les champs directs du courrier
-      const { serviceIds, councilIds, contactIds, ...mailData } = data;
+      // Mise à jour direct du mail
+      const { serviceDestinations, councilIds, contactIds, ...mailData } = data;
       const updatedMail = await tx.mailIn.update({
         where: { id },
-        data: mailData, // Seulement les champs directs (date, subject, needsMayor, needsDgs)
+        data: mailData,
       });
 
-      // 2. Gérer les relations services
-      if (serviceIds !== undefined) {
-        // Supprimer les anciennes relations
+      // Relations services avec type
+      if (serviceDestinations !== undefined) {
         await tx.serviceReceivedMail.deleteMany({
           where: { mailInId: id },
         });
-        // Créer les nouvelles relations
-        if (serviceIds.length > 0) {
+        if (serviceDestinations.length > 0) {
           await tx.serviceReceivedMail.createMany({
-            data: serviceIds.map((serviceId) => ({
+            data: serviceDestinations.map(({ serviceId, type }) => ({
               serviceId,
               mailInId: id,
+              type: type as any,
             })),
           });
         }
       }
-      // 3. Gérer les relations conseillers
+      // Relations conseil
       if (councilIds !== undefined) {
-        // Supprimer les anciennes relations
         await tx.mailCopy.deleteMany({
           where: { mailInId: id },
         });
-        // Créer les nouvelles relations
         if (councilIds.length > 0) {
           await tx.mailCopy.createMany({
             data: councilIds.map((councilId) => ({
@@ -372,13 +376,11 @@ export async function updateMailIn(id: number, data: UpdateMailInData) {
           });
         }
       }
-      // 4. Gérer les relations contacts
+      // Relations contacts
       if (contactIds !== undefined) {
-        // Supprimer les anciennes relations
         await tx.mailInRecipient.deleteMany({
           where: { mailInId: id },
         });
-        // Créer les nouvelles relations
         if (contactIds.length > 0) {
           await tx.mailInRecipient.createMany({
             data: contactIds.map((contactId) => ({
@@ -391,7 +393,6 @@ export async function updateMailIn(id: number, data: UpdateMailInData) {
       return updatedMail;
     });
 
-    // Récupérer le courrier avec toutes ses relations mises à jour
     return await getMailInById(result.id);
   } catch (error: any) {
     console.error("Erreur détaillée updateMailIn:", {
@@ -415,7 +416,6 @@ export async function deleteMailIn(id: number) {
     throw new NotFoundError("Mail");
   }
 
-  // Supprimer toutes les relations avant de supprimer le courrier
   await prisma.$transaction([
     prisma.mailCopy.deleteMany({ where: { mailInId: id } }),
     prisma.serviceReceivedMail.deleteMany({ where: { mailInId: id } }),
