@@ -140,7 +140,11 @@ export async function getMailInById(id: number) {
     where: { id },
     include: {
       services: {
-        include: {
+        select: {
+          serviceId: true,
+          mailInId: true,
+          createdAt: true,
+          type: true,
           service: {
             select: {
               id: true,
@@ -241,7 +245,11 @@ export async function getAllMailIn(
       where: whereClause,
       include: {
         services: {
-          include: {
+          select: {
+            serviceId: true,
+            mailInId: true,
+            createdAt: true,
+            type: true,
             service: {
               select: {
                 id: true,
