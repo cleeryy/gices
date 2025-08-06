@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import debounce from "lodash/debounce";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -64,6 +65,20 @@ export function HistoryFilters({ onFiltersChange }: HistoryFiltersProps) {
   const [allServices, setAllServices] = useState<Service[]>([]);
   const [servicesLoading, setServicesLoading] = useState(true);
 
+  const debouncedSetSearchQuery = useMemo(
+    () =>
+      debounce((value: string) => {
+        setSearchQuery(value);
+      }, 700),
+    []
+  );
+
+  useEffect(() => {
+    return () => {
+      debouncedSetSearchQuery.cancel();
+    };
+  }, [debouncedSetSearchQuery]);
+
   useEffect(() => {
     const fetchServices = async () => {
       setServicesLoading(true);
@@ -107,6 +122,10 @@ export function HistoryFilters({ onFiltersChange }: HistoryFiltersProps) {
     onFiltersChange,
   ]);
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    debouncedSetSearchQuery(e.target.value);
+  };
+
   const handleServiceSelect = (service: Service) => {
     setSelectedServices((prev) =>
       prev.some((s) => s.id === service.id)
@@ -128,12 +147,11 @@ export function HistoryFilters({ onFiltersChange }: HistoryFiltersProps) {
         <div className="flex-1">
           <Input
             placeholder="Rechercher par objet..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            defaultValue={searchQuery}
+            onChange={handleSearchChange}
             className="bg-background border-input"
           />
         </div>
-
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
           <Popover>
             <PopoverTrigger asChild>
@@ -180,7 +198,6 @@ export function HistoryFilters({ onFiltersChange }: HistoryFiltersProps) {
               </Command>
             </PopoverContent>
           </Popover>
-
           <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -214,10 +231,8 @@ export function HistoryFilters({ onFiltersChange }: HistoryFiltersProps) {
           </Popover>
         </div>
       </div>
-
       <div className="flex flex-wrap items-center gap-4 p-4 border rounded-lg bg-muted/50 border-border">
         <div className="flex items-center space-x-2">
-          {/* ✅ CORRECTION : La prop 'checked' attend un boolean. */}
           <Switch
             id="needsMayor"
             checked={needsMayor === true}
@@ -228,7 +243,6 @@ export function HistoryFilters({ onFiltersChange }: HistoryFiltersProps) {
           <Label htmlFor="needsMayor">MAIRE requis</Label>
         </div>
         <div className="flex items-center space-x-2">
-          {/* ✅ CORRECTION : La prop 'checked' attend un boolean. */}
           <Switch
             id="needsDgs"
             checked={needsDgs === true}
@@ -239,7 +253,6 @@ export function HistoryFilters({ onFiltersChange }: HistoryFiltersProps) {
           <Label htmlFor="needsDgs">DGS requis</Label>
         </div>
       </div>
-
       {hasActiveFilters && (
         <div className="flex flex-wrap items-center gap-2">
           {selectedServices.map((service) => (
