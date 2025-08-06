@@ -19,6 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Eye, Edit, Trash2, Plus } from "lucide-react";
+import Link from "next/link";
 
 interface Column<T> {
   key: keyof T;
@@ -102,9 +103,19 @@ export function DataTable<T extends { id: string | number }>({
                 <TableRow key={String(item.id)}>
                   {columns.map((column) => (
                     <TableCell key={String(column.key)}>
-                      {column.render
-                        ? column.render(item[column.key], item)
-                        : String(item[column.key])}
+                      {column.render ? (
+                        column.render(item[column.key], item)
+                      ) : column.key === "email" ? (
+                        String(item[column.key]) !== "null" ? (
+                          <Link href={`mailto:${String(item[column.key])}`}>
+                            {String(item[column.key])}
+                          </Link>
+                        ) : (
+                          "Aucun email"
+                        )
+                      ) : (
+                        String(item[column.key])
+                      )}
                     </TableCell>
                   ))}
                   <TableCell>
