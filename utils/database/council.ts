@@ -85,15 +85,20 @@ export async function getCouncilById(id: number) {
   return council;
 }
 
-export async function getAllCouncil(params: PaginationParams = {}) {
+export async function getAllCouncil(
+  params: PaginationParams = {},
+  includeInactive = false
+) {
   const { page = 1, limit = 1000 } = params;
   const { skip, take } = getPrismaSkipTake(page, limit);
+
+  const whereCondition = includeInactive ? {} : { isActive: true };
 
   const [council, total] = await Promise.all([
     prisma.council.findMany({
       skip,
       take,
-      where: { isActive: true },
+      where: whereCondition,
       include: {
         _count: {
           select: {
@@ -103,7 +108,7 @@ export async function getAllCouncil(params: PaginationParams = {}) {
       },
       orderBy: { position: "asc" },
     }),
-    prisma.council.count({ where: { isActive: true } }),
+    prisma.council.count({ where: whereCondition }),
   ]);
 
   return calculatePagination(council, total, page, limit);
@@ -170,13 +175,13 @@ export async function deleteCouncil(id: number) {
 
 export async function searchCouncil(
   query: string,
-  params: PaginationParams = {}
+  params: PaginationParams = {},
+  includeInactive = false
 ) {
   const { page = 1, limit = 10 } = params;
   const { skip, take } = getPrismaSkipTake(page, limit);
 
-  const whereClause = {
-    isActive: true,
+  const baseWhere = {
     OR: [
       { firstName: { contains: query, mode: "insensitive" as const } },
       { lastName: { contains: query, mode: "insensitive" as const } },
@@ -184,6 +189,10 @@ export async function searchCouncil(
       { login: { contains: query, mode: "insensitive" as const } },
     ],
   };
+
+  const whereClause = includeInactive
+    ? baseWhere
+    : { ...baseWhere, isActive: true };
 
   const [council, total] = await Promise.all([
     prisma.council.findMany({

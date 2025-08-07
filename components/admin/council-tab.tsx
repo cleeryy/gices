@@ -42,7 +42,9 @@ export function CouncilTab() {
   const fetchCouncil = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/council?limit=1000");
+      const response = await fetch(
+        "/api/council?limit=1000&includeInactive=true"
+      );
       const result = await response.json();
       if (result.success && result.data) {
         const arr = result.data.data;

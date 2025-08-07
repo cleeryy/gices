@@ -19,13 +19,18 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get("query");
     const page = parseNumber(searchParams.get("page"));
     const limit = parseNumber(searchParams.get("limit"));
+    const includeInactive = searchParams.get("includeInactive") === "true";
 
     if (query) {
-      const council = await searchCouncil(query, { page, limit });
+      const council = await searchCouncil(
+        query,
+        { page, limit },
+        includeInactive
+      );
       return successResponse(council, "Council search success");
     }
 
-    const council = await getAllCouncil({ page, limit });
+    const council = await getAllCouncil({ page, limit }, includeInactive);
     return successResponse(council, "Council list");
   } catch (e: any) {
     return errorResponse(e.message, e.statusCode ?? 500);
