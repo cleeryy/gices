@@ -371,37 +371,13 @@ export default function ProfilePage() {
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">
-                        Courriers envoyés
-                      </span>
-                      <Badge
-                        variant="outline"
-                        className="text-blue-600 border-blue-300"
-                      >
-                        {userStats?.mailsSent || 0}
-                      </Badge>
-                    </div>
-
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">
                         Courriers traités
                       </span>
                       <Badge
                         variant="outline"
-                        className="text-green-600 border-green-300"
+                        className="text-primary border-primary/50 hover:scale-105 transition-all duration-300"
                       >
                         {userStats?.mailsReceived || 0}
-                      </Badge>
-                    </div>
-
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">
-                        Activité totale
-                      </span>
-                      <Badge
-                        variant="outline"
-                        className="text-purple-600 border-purple-300"
-                      >
-                        {userStats?.totalActivity || 0}
                       </Badge>
                     </div>
 
