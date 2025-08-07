@@ -29,7 +29,7 @@ export function Header({ title = "GICES", onNotificationClick }: HeaderProps) {
   }, [status]);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-card">
+    <header className="sticky top-0 z-50 w-full border-b bg-card/50 backdrop-blur-sm">
       <div className="flex px-10 h-16 justify-around items-center">
         <div className="mr-4 hidden md:flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">

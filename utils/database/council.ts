@@ -86,7 +86,7 @@ export async function getCouncilById(id: number) {
 }
 
 export async function getAllCouncil(params: PaginationParams = {}) {
-  const { page = 1, limit = 10 } = params;
+  const { page = 1, limit = 1000 } = params;
   const { skip, take } = getPrismaSkipTake(page, limit);
 
   const [council, total] = await Promise.all([
