@@ -289,11 +289,11 @@ export const PrintMailsDialog: React.FC = () => {
                       </td>
                       <td>{mail.id}</td>
                       <td>{mail.subject}</td>
-                      <td>
+                      {/* <td>
                         {mail.needsMayor && "MAIRE requis "}
                         {mail.needsDgs && "DGS requis "}
                         {!mail.needsMayor && !mail.needsDgs && "Standard"}
-                      </td>
+                      </td> */}
                       <td>
                         {formatServicesForPrint(
                           getServicesByType(mail.services, "INFO")
