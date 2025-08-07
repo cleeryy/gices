@@ -463,9 +463,9 @@ export function HistoryTable({
             <TableHead className="text-foreground font-semibold">
               Objet
             </TableHead>
-            <TableHead className="text-foreground font-semibold">
+            {/* <TableHead className="text-foreground font-semibold">
               Statut
-            </TableHead>
+            </TableHead> */}
             <TableHead className="text-foreground font-semibold">
               Services INFO
             </TableHead>
@@ -503,7 +503,7 @@ export function HistoryTable({
                   {item.subject}
                 </div>
               </TableCell>
-              <TableCell>
+              {/* <TableCell>
                 <div className="flex flex-wrap gap-1">
                   {getStatusBadges(item)}
                   {!item.needsMayor && !item.needsDgs && (
@@ -512,7 +512,7 @@ export function HistoryTable({
                     </Badge>
                   )}
                 </div>
-              </TableCell>
+              </TableCell> */}
               <TableCell>
                 {renderServiceBadges(getServicesByType(item.services, "INFO"))}
               </TableCell>
