@@ -31,6 +31,7 @@ type MailInItem = {
       name: string;
       code: string;
     };
+    type: "INFO" | "SUIVI";
   }[];
   _count: {
     copies: number;
@@ -61,6 +62,22 @@ export const PrintMailsDialog: React.FC = () => {
   const [mails, setMails] = useState<MailInItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Helper functions pour séparer les services par type
+  const getServicesByType = (
+    services: MailInItem["services"],
+    type: "INFO" | "SUIVI"
+  ) => {
+    if (!services) return [];
+    return services
+      .filter((s) => s.type === type)
+      .map((s) => s.service.code)
+      .filter(Boolean);
+  };
+
+  const formatServicesForPrint = (codes: string[]) => {
+    return codes.length === 0 ? "Aucun" : codes.join(", ");
+  };
 
   // Fetch mails for the selected date
   const fetchMails = useCallback(async () => {
@@ -134,17 +151,18 @@ export const PrintMailsDialog: React.FC = () => {
         table {
           width: 100%;
           border-collapse: collapse;
-          font-size: 12px;
+          font-size: 11px;
         }
         th, td {
           border: 1px solid #555;
-          padding: 6px 10px;
+          padding: 4px 8px;
           text-align: left;
           vertical-align: top;
         }
         th {
           background: #efefef;
           font-weight: 600;
+          font-size: 10px;
         }
         tr:nth-child(even) td {
           background: #f9f9f9;
@@ -154,6 +172,14 @@ export const PrintMailsDialog: React.FC = () => {
           font-size: 1.2em;
           margin-bottom: 1rem;
           font-weight: bold;
+        }
+        ul {
+          margin: 0;
+          padding-left: 12px;
+          font-size: 10px;
+        }
+        li {
+          margin-bottom: 2px;
         }
         @media print {
           body { background: #fff !important; }
@@ -178,7 +204,7 @@ export const PrintMailsDialog: React.FC = () => {
         <span>Imprimer</span>
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-3xl">
+        <DialogContent className="sm:max-w-6xl">
           <DialogHeader>
             <DialogTitle>Impression des mails</DialogTitle>
           </DialogHeader>
@@ -228,7 +254,8 @@ export const PrintMailsDialog: React.FC = () => {
                   <th>ID</th>
                   <th>Objet</th>
                   <th>Statut</th>
-                  <th>Services</th>
+                  <th>INFO</th>
+                  <th>SUIVI</th>
                   <th>Copies</th>
                   <th>Expéditeurs</th>
                 </tr>
@@ -236,19 +263,19 @@ export const PrintMailsDialog: React.FC = () => {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-2">
+                    <td colSpan={8} className="text-center py-2">
                       Chargement…
                     </td>
                   </tr>
                 ) : error ? (
                   <tr>
-                    <td colSpan={7} className="text-red-500 py-2">
+                    <td colSpan={8} className="text-red-500 py-2">
                       {error}
                     </td>
                   </tr>
                 ) : mails.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-2">
+                    <td colSpan={8} className="text-center py-2">
                       Aucun mail trouvé pour cette date.
                     </td>
                   </tr>
@@ -268,9 +295,14 @@ export const PrintMailsDialog: React.FC = () => {
                         {!mail.needsMayor && !mail.needsDgs && "Standard"}
                       </td>
                       <td>
-                        {mail.services?.length
-                          ? mail.services.map((s) => s.service.code).join(", ")
-                          : "Aucun service"}
+                        {formatServicesForPrint(
+                          getServicesByType(mail.services, "INFO")
+                        )}
+                      </td>
+                      <td>
+                        {formatServicesForPrint(
+                          getServicesByType(mail.services, "SUIVI")
+                        )}
                       </td>
                       <td>
                         {mail.copies && mail.copies.length > 0 ? (
