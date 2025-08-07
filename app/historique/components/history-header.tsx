@@ -1,3 +1,4 @@
+import AfficherParID from "@/components/historique/AfficherParID";
 import { PrintMailsDialog } from "@/components/historique/PrintMailsDialog";
 
 export function HistoryHeader() {
@@ -11,7 +12,8 @@ export function HistoryHeader() {
           </p>
         </div>
       </div>
-      <div>
+      <div className="flex items-center justify-center gap-6">
+        <AfficherParID />
         <PrintMailsDialog />
       </div>
     </div>
