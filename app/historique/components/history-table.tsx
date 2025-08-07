@@ -350,7 +350,7 @@ export function HistoryTable({
               <Separator />
               <div className="flex gap-6">
                 <div className="min-w-[110px] text-muted-foreground font-medium">
-                  Services INFO :
+                  INFO :
                 </div>
                 <div>
                   {renderServiceBadges(
@@ -361,7 +361,7 @@ export function HistoryTable({
               <Separator />
               <div className="flex gap-6">
                 <div className="min-w-[110px] text-muted-foreground font-medium">
-                  Services SUIVI :
+                  SUIVI :
                 </div>
                 <div>
                   {renderServiceBadges(
