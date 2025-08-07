@@ -493,55 +493,6 @@ export default function ProfilePage() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Actions rapides */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Navigation rapide</CardTitle>
-            <CardDescription>
-              Accès direct aux fonctionnalités principales
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Button
-                variant="outline"
-                className="h-auto p-4 flex flex-col items-center space-y-2 hover:bg-muted/50"
-                onClick={() => router.push("/dashboard")}
-              >
-                <Building className="h-6 w-6" />
-                <span className="text-sm">Dashboard</span>
-              </Button>
-
-              <Button
-                variant="outline"
-                className="h-auto p-4 flex flex-col items-center space-y-2 hover:bg-muted/50"
-                onClick={() => router.push("/tests/users")}
-              >
-                <User className="h-6 w-6" />
-                <span className="text-sm">Utilisateurs</span>
-              </Button>
-
-              <Button
-                variant="outline"
-                className="h-auto p-4 flex flex-col items-center space-y-2 hover:bg-muted/50"
-                onClick={() => router.push("/tests/services")}
-              >
-                <Building className="h-6 w-6" />
-                <span className="text-sm">Services</span>
-              </Button>
-
-              <Button
-                variant="outline"
-                className="h-auto p-4 flex flex-col items-center space-y-2 hover:bg-muted/50"
-                onClick={() => router.push("/tests/mail-in")}
-              >
-                <Mail className="h-6 w-6" />
-                <span className="text-sm">Courrier</span>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </main>
     </div>
   );
