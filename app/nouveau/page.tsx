@@ -70,6 +70,7 @@ export default function CreateMailInPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [nextMailId, setNextMailId] = useState<number | null>(null);
   const [createdMailId, setCreatedMailId] = useState<number | null>(null);
+  const [refresh, setRefresh] = useState<boolean>(false);
 
   useEffect(() => {
     (async () => {
@@ -86,6 +87,7 @@ export default function CreateMailInPage() {
         setNextMailId(nextId.success ? nextId.data : null);
       } catch (err) {}
     })();
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   const form = useForm<FormData>({
@@ -231,6 +233,7 @@ export default function CreateMailInPage() {
       setCreatedMailId(result.data.id);
       form.reset();
       toast.success("Courrier ajouté !");
+      window.location.reload();
     } catch (err: any) {
       setSubmitError(err.message || "Erreur serveur");
     } finally {
