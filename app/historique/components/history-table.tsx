@@ -377,7 +377,7 @@ export function HistoryTable({
               <Separator />
               <div className="flex gap-6">
                 <div className="min-w-[110px] text-muted-foreground font-medium">
-                  Copies élus :
+                  Élus :
                 </div>
                 <div>{renderCopies(selectedItem)}</div>
               </div>
@@ -478,7 +478,7 @@ export function HistoryTable({
               SUIVI
             </TableHead>
             <TableHead className="text-foreground font-semibold">
-              Copies élus<span className="text-muted-foreground mx-1">/</span>{" "}
+              Élus<span className="text-muted-foreground mx-1">/</span>{" "}
               Expéditeurs
             </TableHead>
             <TableHead className="text-foreground font-semibold w-[88px] text-center">
@@ -526,7 +526,7 @@ export function HistoryTable({
               </TableCell>
               <TableCell className="text-foreground">
                 <div className="mb-1 font-semibold text-xs text-muted-foreground">
-                  Copies élus :
+                  Élus :
                 </div>
                 {renderCopies(item)}
                 <div className="mt-1 mb-1 font-semibold text-xs text-muted-foreground">

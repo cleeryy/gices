@@ -119,8 +119,8 @@ export function CouncilTab() {
       <DataTable
         data={council}
         columns={columns}
-        title="Membres du conseil"
-        description="Gérez les membres du conseil municipal"
+        title="Élusélus"
+        description="Gérez les élus"
         onEdit={handleEdit}
         onDelete={confirmDelete}
         onAdd={handleAdd}

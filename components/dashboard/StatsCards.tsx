@@ -46,9 +46,9 @@ export function StatsCards({ stats, showAdditional = false }: StatsCardsProps) {
     //   icon: Send,
     // },
     {
-      title: "Conseillers",
+      title: "Élus",
       value: stats?.totalCouncil || 0,
-      description: "Conseillers municipaux",
+      description: "Élus",
       icon: Building,
     },
   ];

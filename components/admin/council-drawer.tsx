@@ -99,8 +99,8 @@ export function CouncilDrawer({
           </DrawerTitle>
           <DrawerDescription>
             {councilMember
-              ? "Modifiez les informations du membre du conseil"
-              : "Ajoutez un membre du conseil municipal"}
+              ? "Modifiez les informations de l'élus"
+              : "Ajoutez un élus"}
           </DrawerDescription>
         </DrawerHeader>
 

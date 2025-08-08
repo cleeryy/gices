@@ -240,13 +240,13 @@ function AfficherParID() {
                 </Card>
               )}
 
-              {/* Conseillers */}
+              {/* Élus */}
               {mailData.copies?.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <IconUsers className="h-4 w-4" />
-                      Conseillers en copie
+                      Élus
                       <Badge variant="outline">{mailData.copies.length}</Badge>
                     </CardTitle>
                   </CardHeader>
@@ -279,7 +279,7 @@ function AfficherParID() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <IconUser className="h-4 w-4" />
-                      Expéditeur(s)
+                      Expéditeurs
                       <Badge variant="outline">
                         {mailData.recipients.length}
                       </Badge>

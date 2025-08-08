@@ -478,9 +478,9 @@ export default function CreateMailInPage() {
             )}
           </Card>
 
-          {/* Conseillers */}
+          {/* Élus */}
           <Card className="p-4">
-            <Label className="font-medium">Conseillers en copie</Label>
+            <Label className="font-medium">Élus</Label>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mt-3">
               {council.map((councilMember) => (
                 <div

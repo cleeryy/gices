@@ -17,7 +17,7 @@ export default function AdminPage() {
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="users">Utilisateurs</TabsTrigger>
               <TabsTrigger value="services">Services</TabsTrigger>
-              <TabsTrigger value="council">Conseil</TabsTrigger>
+              <TabsTrigger value="council">Élus</TabsTrigger>
             </TabsList>
 
             <TabsContent value="users">
