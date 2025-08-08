@@ -32,12 +32,18 @@ interface Service {
   code: string;
 }
 
+interface ContactIn {
+  id: number;
+  name: string;
+}
+
 interface HistoryFiltersProps {
   onFiltersChange: (filters: {
     searchQuery: string;
     needsMayor?: boolean;
     needsDgs?: boolean;
     serviceIds?: number[];
+    contactIds?: number[];
     dateFrom?: Date;
     dateTo?: Date;
   }) => void;
@@ -49,6 +55,7 @@ function getStartOfDayUTC(d?: Date) {
     Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0)
   );
 }
+
 function getEndOfDayUTC(d?: Date) {
   if (!d) return undefined;
   return new Date(
@@ -61,9 +68,13 @@ export function HistoryFilters({ onFiltersChange }: HistoryFiltersProps) {
   const [needsMayor, setNeedsMayor] = useState<boolean | undefined>(undefined);
   const [needsDgs, setNeedsDgs] = useState<boolean | undefined>(undefined);
   const [selectedServices, setSelectedServices] = useState<Service[]>([]);
+  const [selectedContacts, setSelectedContacts] = useState<ContactIn[]>([]);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [allServices, setAllServices] = useState<Service[]>([]);
+  const [searchedContacts, setSearchedContacts] = useState<ContactIn[]>([]); // Only searched contacts
+  const [contactSearchQuery, setContactSearchQuery] = useState("");
   const [servicesLoading, setServicesLoading] = useState(true);
+  const [contactsSearching, setContactsSearching] = useState(false); // Changed to searching state
 
   const debouncedSetSearchQuery = useMemo(
     () =>
@@ -73,12 +84,50 @@ export function HistoryFilters({ onFiltersChange }: HistoryFiltersProps) {
     []
   );
 
+  // Debounced contact search with 3 character minimum - fetches from server
+  const debouncedContactSearch = useMemo(
+    () =>
+      debounce(async (value: string) => {
+        if (value.length >= 3) {
+          setContactsSearching(true);
+          try {
+            const response = await fetch(
+              `/api/contacts-in?query=${encodeURIComponent(value)}&limit=50`
+            );
+            const contactsRes = await response.json();
+            if (contactsRes.success) {
+              const contactsData =
+                contactsRes.data?.data || contactsRes.data || [];
+              setSearchedContacts(contactsData);
+            } else {
+              setSearchedContacts([]);
+            }
+          } catch (error) {
+            console.error("Erreur lors de la recherche des contacts:", error);
+            setSearchedContacts([]);
+          } finally {
+            setContactsSearching(false);
+          }
+        } else {
+          setSearchedContacts([]);
+        }
+      }, 400),
+    []
+  );
+
   useEffect(() => {
     return () => {
       debouncedSetSearchQuery.cancel();
+      debouncedContactSearch.cancel();
     };
-  }, [debouncedSetSearchQuery]);
+  }, [debouncedSetSearchQuery, debouncedContactSearch]);
 
+  // Handle contact search input change
+  useEffect(() => {
+    debouncedContactSearch(contactSearchQuery);
+  }, [contactSearchQuery, debouncedContactSearch]);
+
+  // Fetch services
   useEffect(() => {
     const fetchServices = async () => {
       setServicesLoading(true);
@@ -102,6 +151,7 @@ export function HistoryFilters({ onFiltersChange }: HistoryFiltersProps) {
     fetchServices();
   }, []);
 
+  // Update filters when any dependency changes
   useEffect(() => {
     if (typeof onFiltersChange === "function") {
       onFiltersChange({
@@ -109,6 +159,7 @@ export function HistoryFilters({ onFiltersChange }: HistoryFiltersProps) {
         needsMayor,
         needsDgs,
         serviceIds: selectedServices.map((s) => s.id),
+        contactIds: selectedContacts.map((c) => c.id),
         dateFrom: getStartOfDayUTC(dateRange?.from),
         dateTo: getEndOfDayUTC(dateRange?.to),
       });
@@ -118,6 +169,7 @@ export function HistoryFilters({ onFiltersChange }: HistoryFiltersProps) {
     needsMayor,
     needsDgs,
     selectedServices,
+    selectedContacts,
     dateRange,
     onFiltersChange,
   ]);
@@ -134,11 +186,20 @@ export function HistoryFilters({ onFiltersChange }: HistoryFiltersProps) {
     );
   };
 
+  const handleContactSelect = (contact: ContactIn) => {
+    setSelectedContacts((prev) =>
+      prev.some((c) => c.id === contact.id)
+        ? prev.filter((c) => c.id !== contact.id)
+        : [...prev, contact]
+    );
+  };
+
   const hasActiveFilters =
     searchQuery ||
     needsMayor !== undefined ||
     needsDgs !== undefined ||
     selectedServices.length > 0 ||
+    selectedContacts.length > 0 ||
     dateRange?.from;
 
   return (
@@ -153,6 +214,7 @@ export function HistoryFilters({ onFiltersChange }: HistoryFiltersProps) {
           />
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          {/* Services selector */}
           <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -198,6 +260,65 @@ export function HistoryFilters({ onFiltersChange }: HistoryFiltersProps) {
               </Command>
             </PopoverContent>
           </Popover>
+
+          {/* Expediteurs (Contacts In) selector */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                className="w-full sm:w-[240px] justify-between"
+              >
+                <span className="truncate">
+                  {selectedContacts.length > 0
+                    ? `${selectedContacts.length} expéditeur(s) sélectionné(s)`
+                    : "Sélectionner expéditeurs..."}
+                </span>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[240px] p-0">
+              <Command shouldFilter={false}>
+                <CommandInput
+                  placeholder="Chercher un expéditeur (min. 3 car.)..."
+                  value={contactSearchQuery}
+                  onValueChange={setContactSearchQuery}
+                />
+                <CommandList>
+                  <CommandEmpty>
+                    {contactsSearching
+                      ? "Recherche en cours..."
+                      : contactSearchQuery.length > 0 &&
+                        contactSearchQuery.length < 3
+                      ? "Tapez au moins 3 caractères pour rechercher..."
+                      : contactSearchQuery.length >= 3
+                      ? "Aucun expéditeur trouvé."
+                      : "Tapez au moins 3 caractères pour commencer la recherche..."}
+                  </CommandEmpty>
+                  <CommandGroup>
+                    {searchedContacts.map((contact) => (
+                      <CommandItem
+                        key={contact.id}
+                        value={contact.name}
+                        onSelect={() => handleContactSelect(contact)}
+                      >
+                        <Check
+                          className={`mr-2 h-4 w-4 ${
+                            selectedContacts.some((c) => c.id === contact.id)
+                              ? "opacity-100"
+                              : "opacity-0"
+                          }`}
+                        />
+                        {contact.name}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+
+          {/* Date range selector */}
           <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -231,6 +352,8 @@ export function HistoryFilters({ onFiltersChange }: HistoryFiltersProps) {
           </Popover>
         </div>
       </div>
+
+      {/* Boolean filters */}
       <div className="flex flex-wrap items-center gap-4 p-4 border rounded-lg bg-muted/50 border-border">
         <div className="flex items-center space-x-2">
           <Switch
@@ -253,6 +376,8 @@ export function HistoryFilters({ onFiltersChange }: HistoryFiltersProps) {
           <Label htmlFor="needsDgs">DGS requis</Label>
         </div>
       </div>
+
+      {/* Active filters badges */}
       {hasActiveFilters && (
         <div className="flex flex-wrap items-center gap-2">
           {selectedServices.map((service) => (
@@ -260,6 +385,17 @@ export function HistoryFilters({ onFiltersChange }: HistoryFiltersProps) {
               {service.code}
               <button
                 onClick={() => handleServiceSelect(service)}
+                className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              >
+                <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+              </button>
+            </Badge>
+          ))}
+          {selectedContacts.map((contact) => (
+            <Badge key={contact.id} variant="secondary">
+              {contact.name}
+              <button
+                onClick={() => handleContactSelect(contact)}
                 className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
               >
                 <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />

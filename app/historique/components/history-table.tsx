@@ -72,6 +72,7 @@ interface HistoryTableProps {
     needsMayor?: boolean;
     needsDgs?: boolean;
     serviceIds?: number[];
+    contactIds?: number[]; // <--- AJOUT
     dateFrom?: Date;
     dateTo?: Date;
   };
@@ -135,6 +136,10 @@ export function HistoryTable({
 
         if (filters.serviceIds && filters.serviceIds.length > 0) {
           searchParams.append("serviceIds", filters.serviceIds.join(","));
+        }
+
+        if (filters.contactIds && filters.contactIds.length > 0) {
+          searchParams.append("contactIds", filters.contactIds.join(","));
         }
 
         const response = await fetch(`/api/mail-in?${searchParams}`);

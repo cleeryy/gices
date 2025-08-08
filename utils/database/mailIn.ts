@@ -22,12 +22,14 @@ export interface UpdateMailInData {
   contactIds?: number[];
 }
 
+// In your mailIn service file
 export interface MailInFilters {
   needsMayor?: boolean;
   needsDgs?: boolean;
   dateFrom?: Date;
   dateTo?: Date;
   serviceIds?: number[];
+  contactIds?: number[]; // Add this line
   destinationType?: "INFO" | "SUIVI";
 }
 
@@ -238,6 +240,16 @@ export async function getAllMailIn(
     };
   }
 
+  // Contact filtering (expediteurs)
+  if (filters.contactIds && filters.contactIds.length > 0) {
+    whereClause.recipients = {
+      some: {
+        contactId: { in: filters.contactIds },
+      },
+    };
+  }
+
+  // Rest of your function remains the same...
   const [mailsIn, total] = await Promise.all([
     prisma.mailIn.findMany({
       skip,

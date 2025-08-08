@@ -13,6 +13,7 @@ export default function HistoriquePage() {
     needsMayor?: boolean;
     needsDgs?: boolean;
     serviceIds?: number[];
+    contactIds?: number[]; // <--- AJOUT ICI
     dateFrom?: Date;
     dateTo?: Date;
   }>({ searchQuery: "" });
@@ -40,6 +41,7 @@ export default function HistoriquePage() {
               needsMayor: filters.needsMayor,
               needsDgs: filters.needsDgs,
               serviceIds: filters.serviceIds,
+              contactIds: filters.contactIds, // <--- PROPAGER ICI
               dateFrom: filters.dateFrom,
               dateTo: filters.dateTo,
             }}

@@ -35,6 +35,15 @@ export async function GET(request: NextRequest) {
           .filter((id) => !isNaN(id))
       : undefined;
 
+    // Tableaux d'IDs de contacts (expediteurs)
+    const contactIdsParam = searchParams.get("contactIds");
+    const contactIds = contactIdsParam
+      ? contactIdsParam
+          .split(",")
+          .map((id) => parseInt(id.trim(), 10))
+          .filter((id) => !isNaN(id))
+      : undefined;
+
     const destinationType = searchParams.get("destinationType") as
       | "INFO"
       | "SUIVI"
@@ -44,6 +53,7 @@ export async function GET(request: NextRequest) {
       needsMayor: searchParams.has("needsMayor") ? needsMayor : undefined,
       needsDgs: searchParams.has("needsDgs") ? needsDgs : undefined,
       serviceIds,
+      contactIds,
       destinationType: destinationType || undefined,
       dateFrom,
       dateTo,
