@@ -46,7 +46,7 @@ export function Header({ title = "GICES", onNotificationClick }: HeaderProps) {
                   : "text-foreground/60"
               )}
             >
-              Dashboard
+              Tableau de bord
             </Link>
             <Link
               href="/historique"
