@@ -28,6 +28,7 @@ import {
   ArrowLeft,
   Info,
   Eye,
+  Copy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -67,18 +68,22 @@ export default function CreateMailInPage() {
   const [contacts, setContacts] = useState<ContactData[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [nextMailId, setNextMailId] = useState<number | null>(null);
+  const [createdMailId, setCreatedMailId] = useState<number | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
-        const [s, c, m] = await Promise.all([
+        const [s, c, m, nextId] = await Promise.all([
           fetch("/api/services").then((r) => r.json()),
           fetch("/api/council").then((r) => r.json()),
           fetch("/api/contacts-in").then((r) => r.json()),
+          fetch("/api/mail-in/next-id").then((r) => r.json()),
         ]);
         setServices(s.success ? s.data?.data || s.data || [] : []);
         setCouncil(c.success ? c.data?.data || c.data || [] : []);
         setContacts(m.success ? m.data?.data || m.data || [] : []);
+        setNextMailId(nextId.success ? nextId.data : null);
       } catch (err) {}
     })();
   }, []);
@@ -167,6 +172,12 @@ export default function CreateMailInPage() {
     form.setValue("newContacts", nc);
   };
 
+  // Copy ID to clipboard
+  const copyIdToClipboard = (id: number) => {
+    navigator.clipboard.writeText(id.toString());
+    toast.success("ID copié dans le presse-papiers !");
+  };
+
   // ENVOI : mapping Info/Suivi => tableau [{serviceId,type}]
   const onSubmit = async (data: FormData) => {
     setSubmitting(true);
@@ -198,8 +209,6 @@ export default function CreateMailInPage() {
           .filter((sid) => !watchedInfo.includes(sid)) // évite un doublon inutile, sinon on peut garder les deux entrées type
           .map((serviceId) => ({ serviceId, type: "SUIVI" as const })),
       ];
-      // Tu pourrais, si besoin, autoriser deux fois le même service (INFO et SUIVI ensemble)
-      // Dans ce cas il faut ENLEVER le .filter ci-dessus.
 
       const payload = {
         date: data.date,
@@ -218,6 +227,8 @@ export default function CreateMailInPage() {
       const result = await res.json();
       if (!result.success)
         throw new Error(result.error || "Erreur lors de la création");
+
+      setCreatedMailId(result.data.id);
       form.reset();
       toast.success("Courrier ajouté !");
     } catch (err: any) {
@@ -227,18 +238,50 @@ export default function CreateMailInPage() {
     }
   };
 
+  const displayMailId = createdMailId || nextMailId;
+
   return (
     <div className="container px-4 mx-auto py-6 space-y-6 max-w-3/4">
-      {/* Titre */}
+      {/* Titre avec ID */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" onClick={() => window.history.back()}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Retour
         </Button>
-        <h1 className="text-3xl font-bold text-foreground">
-          Nouveau Courrier Entrant
-        </h1>
+        <div className="flex-1 flex items-center gap-4 justify-between">
+          <h1 className="text-3xl font-bold text-foreground">
+            Nouveau Courrier Entrant
+          </h1>
+          {displayMailId && (
+            <div className="flex items-center gap-2 mt-2">
+              {!createdMailId && (
+                <span className="text-xs text-muted-foreground">
+                  (Notez cet ID pour vos références)
+                </span>
+              )}
+              <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-950 px-3 py-2 rounded-lg border border-blue-200 dark:border-blue-800">
+                <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                  {createdMailId
+                    ? "ID du courrier créé:"
+                    : "ID du prochain courrier:"}
+                </span>
+                <span className="text-lg font-bold text-blue-900 dark:text-blue-100">
+                  {displayMailId}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => copyIdToClipboard(displayMailId)}
+                  className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+
       <Card className="p-6">
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           {/* Date */}
@@ -396,7 +439,7 @@ export default function CreateMailInPage() {
               <div className="mt-4 space-y-2">
                 {watchedInfo.length > 0 && (
                   <div className="flex gap-2 flex-wrap">
-                    <span className="font-medium text-green-700">INFO :</span>
+                    <span className="font-medium text-green-700">INFO :</span>
                     {watchedInfo.map((sId) => {
                       const serv = services.find((s) => s.id === sId);
                       return serv ? (
@@ -413,7 +456,7 @@ export default function CreateMailInPage() {
                 )}
                 {watchedSuivi.length > 0 && (
                   <div className="flex gap-2 flex-wrap">
-                    <span className="font-medium text-blue-600">SUIVI :</span>
+                    <span className="font-medium text-blue-600">SUIVI :</span>
                     {watchedSuivi.map((sId) => {
                       const serv = services.find((s) => s.id === sId);
                       return serv ? (
