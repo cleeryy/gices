@@ -14,8 +14,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl;
     const page = parseNumber(searchParams.get("page"));
     const limit = parseNumber(searchParams.get("limit"));
+    const includeInactive = searchParams.get("includeInactive") === "true";
 
-    const services = await getAllServices({ page, limit });
+    const services = await getAllServices({ page, limit }, includeInactive);
     return successResponse(services, "Services list");
   } catch (e: any) {
     return errorResponse(e.message, e.statusCode ?? 500);

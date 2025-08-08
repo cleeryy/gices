@@ -67,15 +67,20 @@ export async function getServiceById(id: number) {
   return service;
 }
 
-export async function getAllServices(params: PaginationParams = {}) {
+export async function getAllServices(
+  params: PaginationParams = {},
+  includeInactive = false
+) {
   const { page = 1, limit = 1000 } = params;
   const { skip, take } = getPrismaSkipTake(page, limit);
+
+  const whereCondition = includeInactive ? {} : { isActive: true };
 
   const [services, total] = await Promise.all([
     prisma.service.findMany({
       skip,
       take,
-      where: { isActive: true },
+      where: whereCondition,
       include: {
         _count: {
           select: {
@@ -85,7 +90,7 @@ export async function getAllServices(params: PaginationParams = {}) {
       },
       orderBy: { name: "asc" },
     }),
-    prisma.service.count({ where: { isActive: true } }),
+    prisma.service.count({ where: whereCondition }),
   ]);
 
   return calculatePagination(services, total, page, limit);
@@ -141,19 +146,10 @@ export async function updateService(
 export async function deleteService(id: number) {
   const service = await prisma.service.findUnique({
     where: { id },
-    include: {
-      _count: {
-        select: { users: true },
-      },
-    },
   });
 
   if (!service) {
     throw new NotFoundError("Service");
-  }
-
-  if (service._count.users > 0) {
-    throw new ValidationError("Cannot delete service with active users");
   }
 
   await prisma.service.update({

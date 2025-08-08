@@ -30,14 +30,17 @@ export function ServicesTab() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Pour le dialog de suppression
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null);
+  // Pour le dialog de désactivation/réactivation
+  const [actionDialogOpen, setActionDialogOpen] = useState(false);
+  const [serviceToAction, setServiceToAction] = useState<Service | null>(null);
 
   const fetchServices = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/services?limit=1000");
+      // Inclure les services inactifs pour l'admin
+      const response = await fetch(
+        "/api/services?limit=1000&includeInactive=true"
+      );
       const result = await response.json();
       if (result.success && result.data) {
         const arr = result.data.data;
@@ -58,34 +61,55 @@ export function ServicesTab() {
     setSelectedService(svc);
     setIsDrawerOpen(true);
   };
+
   const handleAdd = () => {
     setSelectedService(null);
     setIsDrawerOpen(true);
   };
 
-  // Ouvre le dialog de confirmation au lieu de delete direct
-  const confirmDelete = (svc: Service) => {
-    setServiceToDelete(svc);
-    setDeleteDialogOpen(true);
+  // Ouvre le dialog de confirmation pour désactiver/réactiver
+  const confirmAction = (svc: Service) => {
+    setServiceToAction(svc);
+    setActionDialogOpen(true);
   };
 
-  // Suppression réelle, appelée seulement sur "Supprimer" dans le Dialog
-  const handleDelete = async () => {
-    if (!serviceToDelete) return;
+  // Désactivation ou réactivation selon l'état actuel
+  const handleAction = async () => {
+    if (!serviceToAction) return;
+
     try {
-      const response = await fetch(`/api/services/${serviceToDelete.id}`, {
-        method: "DELETE",
-      });
+      let response;
+      let successMessage;
+
+      if (serviceToAction.isActive) {
+        // Désactiver avec DELETE
+        response = await fetch(`/api/services/${serviceToAction.id}`, {
+          method: "DELETE",
+        });
+        successMessage = "Service désactivé";
+      } else {
+        // Réactiver avec PUT
+        response = await fetch(`/api/services/${serviceToAction.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isActive: true }),
+        });
+        successMessage = "Service réactivé";
+      }
+
       const result = await response.json();
       if (result.success) {
-        toast.success("Service supprimé");
+        toast.success(successMessage);
         fetchServices();
-      } else toast.error(result.message || "Erreur lors de la suppression");
+      } else {
+        toast.error(result.message || "Erreur lors de l'action");
+      }
     } catch {
-      toast.error("Erreur lors de la suppression");
+      toast.error("Erreur lors de l'action");
     }
-    setDeleteDialogOpen(false);
-    setServiceToDelete(null);
+
+    setActionDialogOpen(false);
+    setServiceToAction(null);
   };
 
   const columns = [
@@ -100,9 +124,9 @@ export function ServicesTab() {
     },
     {
       key: "isActive" as keyof Service,
-      label: "Actif",
+      label: "Statut",
       render: (value: boolean) => (
-        <Badge variant={value ? "default" : "destructive"}>
+        <Badge variant={value ? "default" : "secondary"}>
           {value ? "Actif" : "Inactif"}
         </Badge>
       ),
@@ -115,9 +139,9 @@ export function ServicesTab() {
         data={services}
         columns={columns}
         title="Services"
-        description="Gérez les services"
+        description="Gérez les services (actifs et inactifs)"
         onEdit={handleEdit}
-        onDelete={confirmDelete}
+        onDelete={confirmAction}
         onAdd={handleAdd}
         searchKey="name"
         loading={loading}
@@ -131,27 +155,45 @@ export function ServicesTab() {
           setIsDrawerOpen(false);
         }}
       />
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <Dialog open={actionDialogOpen} onOpenChange={setActionDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Supprimer ce service ?</DialogTitle>
+            <DialogTitle>
+              {serviceToAction?.isActive ? "Désactiver" : "Réactiver"} ce
+              service ?
+            </DialogTitle>
             <DialogDescription>
-              Cette action est{" "}
-              <span className="font-bold text-destructive">irréversible</span>.
-              <br />
-              Es-tu sûr de vouloir supprimer{" "}
-              <strong>{serviceToDelete?.name}</strong> ?
+              {serviceToAction?.isActive ? (
+                <>
+                  Le service <strong>{serviceToAction?.name}</strong> sera
+                  désactivé et n'apparaîtra plus dans les listes pour les
+                  utilisateurs.
+                  <br />
+                  <span className="text-sm text-muted-foreground">
+                    Vous pourrez le réactiver à tout moment.
+                  </span>
+                </>
+              ) : (
+                <>
+                  Le service <strong>{serviceToAction?.name}</strong> sera
+                  réactivé et redeviendra disponible pour les utilisateurs.
+                </>
+              )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setDeleteDialogOpen(false)}
+              onClick={() => setActionDialogOpen(false)}
             >
               Annuler
             </Button>
-            <Button variant="destructive" onClick={handleDelete} autoFocus>
-              Supprimer
+            <Button
+              variant={serviceToAction?.isActive ? "destructive" : "default"}
+              onClick={handleAction}
+              autoFocus
+            >
+              {serviceToAction?.isActive ? "Désactiver" : "Réactiver"}
             </Button>
           </DialogFooter>
         </DialogContent>
