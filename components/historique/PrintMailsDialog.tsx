@@ -256,7 +256,7 @@ export const PrintMailsDialog: React.FC = () => {
                   {/* <th>Statut</th> */}
                   <th>INFO</th>
                   <th>SUIVI</th>
-                  <th>Copies</th>
+                  <th>Copies élus</th>
                   <th>Expéditeurs</th>
                 </tr>
               </thead>
