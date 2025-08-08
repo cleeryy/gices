@@ -162,7 +162,7 @@ function AfficherParID() {
                 <CardContent className="space-y-4">
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">
-                      Sujet
+                      Objet
                     </label>
                     <p className="text-base font-medium mt-1">
                       {mailData.subject}
@@ -180,7 +180,7 @@ function AfficherParID() {
                     </span>
                   </div>
 
-                  <div className="flex gap-4">
+                  {/* <div className="flex gap-4">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">
                         Maire requis :
@@ -199,7 +199,7 @@ function AfficherParID() {
                         {mailData.needsDgs ? "Oui" : "Non"}
                       </Badge>
                     </div>
-                  </div>
+                  </div> */}
                 </CardContent>
               </Card>
 
@@ -279,7 +279,7 @@ function AfficherParID() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <IconUser className="h-4 w-4" />
-                      Contacts destinataires
+                      Expéditeur(s)
                       <Badge variant="outline">
                         {mailData.recipients.length}
                       </Badge>
