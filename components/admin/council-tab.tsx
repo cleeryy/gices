@@ -33,9 +33,9 @@ export function CouncilTab() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Pour le dialog de suppression
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [councilToDelete, setCouncilToDelete] = useState<CouncilMember | null>(
+  // Pour le dialog de désactivation/réactivation
+  const [actionDialogOpen, setActionDialogOpen] = useState(false);
+  const [councilToAction, setCouncilToAction] = useState<CouncilMember | null>(
     null
   );
 
@@ -65,32 +65,55 @@ export function CouncilTab() {
     setSelectedCouncil(c);
     setIsDrawerOpen(true);
   };
+
   const handleAdd = () => {
     setSelectedCouncil(null);
     setIsDrawerOpen(true);
   };
 
-  const confirmDelete = (c: CouncilMember) => {
-    setCouncilToDelete(c);
-    setDeleteDialogOpen(true);
+  // Ouvre le dialog de confirmation pour désactiver/réactiver
+  const confirmAction = (c: CouncilMember) => {
+    setCouncilToAction(c);
+    setActionDialogOpen(true);
   };
 
-  const handleDelete = async () => {
-    if (!councilToDelete) return;
+  // Désactivation ou réactivation selon l'état actuel
+  const handleAction = async () => {
+    if (!councilToAction) return;
+
     try {
-      const response = await fetch(`/api/council/${councilToDelete.id}`, {
-        method: "DELETE",
-      });
+      let response;
+      let successMessage;
+
+      if (councilToAction.isActive) {
+        // Désactiver avec DELETE
+        response = await fetch(`/api/council/${councilToAction.id}`, {
+          method: "DELETE",
+        });
+        successMessage = "Membre désactivé";
+      } else {
+        // Réactiver avec PUT
+        response = await fetch(`/api/council/${councilToAction.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isActive: true }),
+        });
+        successMessage = "Membre réactivé";
+      }
+
       const result = await response.json();
       if (result.success) {
-        toast.success("Membre supprimé");
+        toast.success(successMessage);
         fetchCouncil();
-      } else toast.error(result.message || "Erreur lors de la suppression");
+      } else {
+        toast.error(result.message || "Erreur lors de l'action");
+      }
     } catch {
-      toast.error("Erreur lors de la suppression");
+      toast.error("Erreur lors de l'action");
     }
-    setDeleteDialogOpen(false);
-    setCouncilToDelete(null);
+
+    setActionDialogOpen(false);
+    setCouncilToAction(null);
   };
 
   const columns = [
@@ -105,9 +128,9 @@ export function CouncilTab() {
     },
     {
       key: "isActive" as keyof CouncilMember,
-      label: "Actif",
+      label: "Statut",
       render: (value: boolean) => (
-        <Badge variant={value ? "default" : "destructive"}>
+        <Badge variant={value ? "default" : "secondary"}>
           {value ? "Actif" : "Inactif"}
         </Badge>
       ),
@@ -119,10 +142,10 @@ export function CouncilTab() {
       <DataTable
         data={council}
         columns={columns}
-        title="Élusélus"
-        description="Gérez les élus"
+        title="Élus"
+        description="Gérez les élus (actifs et inactifs)"
         onEdit={handleEdit}
-        onDelete={confirmDelete}
+        onDelete={confirmAction}
         onAdd={handleAdd}
         searchKey="lastName"
         loading={loading}
@@ -136,30 +159,51 @@ export function CouncilTab() {
           setIsDrawerOpen(false);
         }}
       />
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <Dialog open={actionDialogOpen} onOpenChange={setActionDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Supprimer ce membre ?</DialogTitle>
+            <DialogTitle>
+              {councilToAction?.isActive ? "Désactiver" : "Réactiver"} ce membre
+              ?
+            </DialogTitle>
             <DialogDescription>
-              Cette action est{" "}
-              <span className="font-bold text-destructive">irréversible</span>.
-              <br />
-              Es-tu sûr de vouloir supprimer{" "}
-              <strong>
-                {councilToDelete?.firstName} {councilToDelete?.lastName}
-              </strong>
-               ?
+              {councilToAction?.isActive ? (
+                <>
+                  Le membre{" "}
+                  <strong>
+                    {councilToAction?.firstName} {councilToAction?.lastName}
+                  </strong>{" "}
+                  sera désactivé et n'apparaîtra plus dans les listes pour les
+                  utilisateurs.
+                  <br />
+                  <span className="text-sm text-muted-foreground">
+                    Vous pourrez le réactiver à tout moment.
+                  </span>
+                </>
+              ) : (
+                <>
+                  Le membre{" "}
+                  <strong>
+                    {councilToAction?.firstName} {councilToAction?.lastName}
+                  </strong>{" "}
+                  sera réactivé et redeviendra disponible pour les utilisateurs.
+                </>
+              )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setDeleteDialogOpen(false)}
+              onClick={() => setActionDialogOpen(false)}
             >
               Annuler
             </Button>
-            <Button variant="destructive" onClick={handleDelete} autoFocus>
-              Supprimer
+            <Button
+              variant={councilToAction?.isActive ? "destructive" : "default"}
+              onClick={handleAction}
+              autoFocus
+            >
+              {councilToAction?.isActive ? "Désactiver" : "Réactiver"}
             </Button>
           </DialogFooter>
         </DialogContent>
