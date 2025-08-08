@@ -300,7 +300,7 @@ export async function getAllMailIn(
           },
         },
       },
-      orderBy: { date: "desc" },
+      orderBy: [{ date: "desc" }, { id: "desc" }],
     }),
     prisma.mailIn.count({ where: whereClause }),
   ]);
