@@ -289,6 +289,56 @@ export default function CreateMailInPage() {
             />
           </div>
 
+          {/* Expéditeurs */}
+          <div className="flex gap-2 items-end">
+            <div className="flex-1">
+              <Label className="font-medium mb-2">Expéditeurs</Label>
+              <Input
+                value={contactInput}
+                onChange={(e) => setContactInput(e.target.value)}
+                onKeyPress={handleContactInputKeyPress}
+                placeholder="Nom de l'expéditeur..."
+                className="flex-1"
+              />
+            </div>
+            <Button
+              type="button"
+              onClick={handleAddContact}
+              disabled={!contactInput.trim()}
+            >
+              Ajouter
+            </Button>
+          </div>
+          {(watchedContacts.length > 0 || watchedNewContacts.length > 0) && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {watchedContacts.map((cid) => {
+                const c = contacts.find((c0) => c0.id === cid);
+                return c ? (
+                  <Badge
+                    key={cid}
+                    variant="default"
+                    className="cursor-pointer"
+                    onClick={() => removeContact(cid)}
+                  >
+                    {c.name}
+                    <X className="ml-1 h-3 w-3" />
+                  </Badge>
+                ) : null;
+              })}
+              {watchedNewContacts.map((name, idx) => (
+                <Badge
+                  key={`new-${idx}`}
+                  variant="outline"
+                  className="cursor-pointer"
+                  onClick={() => removeNewContact(idx)}
+                >
+                  {name}
+                  <X className="ml-1 h-3 w-3" />
+                </Badge>
+              ))}
+            </div>
+          )}
+
           {/* Sujet */}
           <div>
             <Label htmlFor="subject">Objet du courrier</Label>
@@ -422,56 +472,6 @@ export default function CreateMailInPage() {
                     </Badge>
                   ) : null;
                 })}
-              </div>
-            )}
-          </Card>
-
-          {/* Expéditeurs */}
-          <Card className="p-4">
-            <Label className="font-medium">Expéditeurs</Label>
-            <div className="flex gap-2 mt-2">
-              <Input
-                value={contactInput}
-                onChange={(e) => setContactInput(e.target.value)}
-                onKeyPress={handleContactInputKeyPress}
-                placeholder="Nom de l'expéditeur..."
-                className="flex-1"
-              />
-              <Button
-                type="button"
-                onClick={handleAddContact}
-                disabled={!contactInput.trim()}
-              >
-                Ajouter
-              </Button>
-            </div>
-            {(watchedContacts.length > 0 || watchedNewContacts.length > 0) && (
-              <div className="flex flex-wrap gap-1 mt-2">
-                {watchedContacts.map((cid) => {
-                  const c = contacts.find((c0) => c0.id === cid);
-                  return c ? (
-                    <Badge
-                      key={cid}
-                      variant="default"
-                      className="cursor-pointer"
-                      onClick={() => removeContact(cid)}
-                    >
-                      {c.name}
-                      <X className="ml-1 h-3 w-3" />
-                    </Badge>
-                  ) : null;
-                })}
-                {watchedNewContacts.map((name, idx) => (
-                  <Badge
-                    key={`new-${idx}`}
-                    variant="outline"
-                    className="cursor-pointer"
-                    onClick={() => removeNewContact(idx)}
-                  >
-                    {name}
-                    <X className="ml-1 h-3 w-3" />
-                  </Badge>
-                ))}
               </div>
             )}
           </Card>
