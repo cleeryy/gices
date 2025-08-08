@@ -136,16 +136,20 @@ export default function CreateMailInPage() {
       );
   };
 
-  // Expéditeurs
+  // Expéditeurs - input simple
   const [contactInput, setContactInput] = useState("");
   const watchedContacts = form.watch("contactIds") ?? [];
   const watchedNewContacts = form.watch("newContacts") ?? [];
-  const handleAddContact = () => {
+
+  // Fonction pour traiter l'input contact (utilisée maintenant seulement au submit)
+  const processContactInput = () => {
     const trimmedInput = contactInput.trim();
     if (!trimmedInput) return;
+
     const existing = contacts.find(
       (contact) => contact.name.toLowerCase() === trimmedInput.toLowerCase()
     );
+
     if (existing) {
       if (!watchedContacts.includes(existing.id)) {
         form.setValue("contactIds", [...watchedContacts, existing.id]);
@@ -157,18 +161,12 @@ export default function CreateMailInPage() {
     }
     setContactInput("");
   };
-  const handleContactInputKeyPress = (
-    e: React.KeyboardEvent<HTMLInputElement>
-  ) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleAddContact();
-    }
-  };
+
   const removeContact = (contactId: number) => {
     const newContacts = watchedContacts.filter((id) => id !== contactId);
     form.setValue("contactIds", newContacts);
   };
+
   const removeNewContact = (index: number) => {
     const nc = watchedNewContacts.filter((_, i) => i !== index);
     form.setValue("newContacts", nc);
@@ -184,10 +182,18 @@ export default function CreateMailInPage() {
   const onSubmit = async (data: FormData) => {
     setSubmitting(true);
     setSubmitError(null);
+
     try {
+      // Traiter l'input contact avant de soumettre
+      processContactInput();
+
+      // Récupérer les valeurs mises à jour après processContactInput
+      const updatedContactIds = form.getValues("contactIds");
+      const updatedNewContacts = form.getValues("newContacts");
+
       // Création nouveaux contacts :
       const newContactIds: number[] = [];
-      for (const cName of data.newContacts) {
+      for (const cName of updatedNewContacts) {
         const response = await fetch("/api/contacts-in", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -198,6 +204,7 @@ export default function CreateMailInPage() {
           newContactIds.push(result.data.id);
         }
       }
+
       // Création du bon tableau
       const serviceDestinations: {
         serviceId: number;
@@ -219,8 +226,9 @@ export default function CreateMailInPage() {
         needsDgs: data.needsDgs,
         serviceDestinations,
         councilIds: data.councilIds,
-        contactIds: [...data.contactIds, ...newContactIds],
+        contactIds: [...updatedContactIds, ...newContactIds],
       };
+
       const res = await fetch("/api/mail-in", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -232,6 +240,7 @@ export default function CreateMailInPage() {
 
       setCreatedMailId(result.data.id);
       form.reset();
+      setContactInput(""); // Reset de l'input aussi
       toast.success("Courrier ajouté !");
       window.location.reload();
     } catch (err: any) {
@@ -335,28 +344,20 @@ export default function CreateMailInPage() {
             />
           </div>
 
-          {/* Expéditeurs */}
-          <div className="flex gap-2 items-end">
-            <div className="flex-1">
-              <Label className="font-medium mb-2">Expéditeurs</Label>
-              <Input
-                value={contactInput}
-                onChange={(e) => setContactInput(e.target.value)}
-                onKeyPress={handleContactInputKeyPress}
-                placeholder="Nom de l'expéditeur..."
-                className="flex-1"
-              />
-            </div>
-            <Button
-              type="button"
-              onClick={handleAddContact}
-              disabled={!contactInput.trim()}
-            >
-              Ajouter
-            </Button>
+          {/* Expéditeurs - input simple */}
+          <div>
+            <Label className="font-medium mb-2">Expéditeur</Label>
+            <Input
+              value={contactInput}
+              onChange={(e) => setContactInput(e.target.value)}
+              placeholder="Nom de l'expéditeur..."
+              className="mt-2"
+            />
           </div>
+
+          {/* Affichage des tags existants */}
           {(watchedContacts.length > 0 || watchedNewContacts.length > 0) && (
-            <div className="flex flex-wrap gap-1 mt-2">
+            <div className="flex flex-wrap gap-1">
               {watchedContacts.map((cid) => {
                 const c = contacts.find((c0) => c0.id === cid);
                 return c ? (
