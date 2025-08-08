@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import {
   Table,
@@ -12,7 +12,13 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, MoreHorizontal, AlertCircle, Pencil } from "lucide-react";
+import {
+  Eye,
+  MoreHorizontal,
+  AlertCircle,
+  Pencil,
+  Calendar as CalendarIcon,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,13 +31,19 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerFooter,
+  DrawerTrigger,
 } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Calendar } from "@/components/ui/calendar";
 import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { toast } from "sonner";
 import LoadIfAdmin from "@/components/admin/LoadIfAdmin";
 
+// Types
 interface MailInItem {
   id: number;
   date: string;
@@ -39,17 +51,10 @@ interface MailInItem {
   needsMayor: boolean;
   needsDgs: boolean;
   services: {
-    service: {
-      id: number;
-      name: string;
-      code: string;
-    };
+    service: { id: number; name: string; code: string };
     type: "INFO" | "SUIVI";
   }[];
-  _count: {
-    copies: number;
-    recipients: number;
-  };
+  _count: { copies: number; recipients: number };
   copies?: {
     council?: {
       id: number;
@@ -58,12 +63,23 @@ interface MailInItem {
       position?: string;
     };
   }[];
-  recipients?: {
-    contact?: {
-      id: number;
-      name: string;
-    };
-  }[];
+  recipients?: { contact?: { id: number; name: string } }[];
+}
+
+interface ServiceData {
+  id: number;
+  name: string;
+  code: string;
+}
+interface CouncilData {
+  id: number;
+  firstName?: string;
+  lastName?: string;
+  position?: string;
+}
+interface ContactData {
+  id: number;
+  name: string;
 }
 
 interface HistoryTableProps {
@@ -72,7 +88,7 @@ interface HistoryTableProps {
     needsMayor?: boolean;
     needsDgs?: boolean;
     serviceIds?: number[];
-    contactIds?: number[]; // <--- AJOUT
+    contactIds?: number[];
     dateFrom?: Date;
     dateTo?: Date;
   };
@@ -93,10 +109,28 @@ export function HistoryTable({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Drawer states
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MailInItem | null>(null);
   const [editMode, setEditMode] = useState(false);
+
+  // Edit states
   const [editedSubject, setEditedSubject] = useState("");
+  const [editedNeedsMayor, setEditedNeedsMayor] = useState(false);
+  const [editedNeedsDgs, setEditedNeedsDgs] = useState(false);
+  const [editedDate, setEditedDate] = useState<Date>(new Date());
+  const [editedServicesInfo, setEditedServicesInfo] = useState<number[]>([]);
+  const [editedServicesSuivi, setEditedServicesSuivi] = useState<number[]>([]);
+  const [editedCouncilIds, setEditedCouncilIds] = useState<number[]>([]);
+  const [editedExpediteur, setEditedExpediteur] = useState("");
+
+  // Data
+  const [servicesData, setServicesData] = useState<ServiceData[]>([]);
+  const [councilData, setCouncilData] = useState<CouncilData[]>([]);
+  const [contactsData, setContactsData] = useState<ContactData[]>([]);
+
+  // Calendar
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   useEffect(() => {
     if (!drawerOpen) {
@@ -104,10 +138,40 @@ export function HistoryTable({
         setEditMode(false);
         setSelectedItem(null);
         setEditedSubject("");
+        setEditedExpediteur("");
       }, 300);
       return () => clearTimeout(timeout);
     }
   }, [drawerOpen]);
+
+  useEffect(() => {
+    const loadEditData = async () => {
+      try {
+        const [servicesRes, councilRes, contactsRes] = await Promise.all([
+          fetch("/api/services"),
+          fetch("/api/council"),
+          fetch("/api/contacts-in"),
+        ]);
+        const [services, council, contacts] = await Promise.all([
+          servicesRes.json(),
+          councilRes.json(),
+          contactsRes.json(),
+        ]);
+        setServicesData(
+          services.success ? services.data?.data || services.data || [] : []
+        );
+        setCouncilData(
+          council.success ? council.data?.data || council.data || [] : []
+        );
+        setContactsData(
+          contacts.success ? contacts.data?.data || contacts.data || [] : []
+        );
+      } catch (error) {
+        console.error("Erreur lors du chargement des données:", error);
+      }
+    };
+    loadEditData();
+  }, []);
 
   useEffect(() => {
     if (status !== "authenticated") {
@@ -115,7 +179,6 @@ export function HistoryTable({
       setLoading(false);
       return;
     }
-
     const fetchMailHistory = async () => {
       setLoading(true);
       setError(null);
@@ -124,7 +187,6 @@ export function HistoryTable({
         if (searchQuery) searchParams.append("query", searchQuery);
         searchParams.append("page", page.toString());
         searchParams.append("limit", limit.toString());
-
         if (filters.needsMayor !== undefined)
           searchParams.append("needsMayor", filters.needsMayor.toString());
         if (filters.needsDgs !== undefined)
@@ -133,14 +195,10 @@ export function HistoryTable({
           searchParams.append("dateFrom", filters.dateFrom.toISOString());
         if (filters.dateTo)
           searchParams.append("dateTo", filters.dateTo.toISOString());
-
-        if (filters.serviceIds && filters.serviceIds.length > 0) {
+        if (filters.serviceIds && filters.serviceIds.length > 0)
           searchParams.append("serviceIds", filters.serviceIds.join(","));
-        }
-
-        if (filters.contactIds && filters.contactIds.length > 0) {
+        if (filters.contactIds && filters.contactIds.length > 0)
           searchParams.append("contactIds", filters.contactIds.join(","));
-        }
 
         const response = await fetch(`/api/mail-in?${searchParams}`);
         const data = await response.json();
@@ -163,10 +221,46 @@ export function HistoryTable({
         setLoading(false);
       }
     };
-
     fetchMailHistory();
   }, [searchQuery, filters, page, limit, status, onDataLoaded]);
 
+  // ---------- HANDLERS MEMORISES ----------
+  const handleSubjectChange = useCallback(
+    (e) => setEditedSubject(e.target.value),
+    []
+  );
+  const handleExpediteurChange = useCallback(
+    (e) => setEditedExpediteur(e.target.value),
+    []
+  );
+  const handleNeedsMayorChange = useCallback(
+    (checked) => setEditedNeedsMayor(checked),
+    []
+  );
+  const handleNeedsDgsChange = useCallback(
+    (checked) => setEditedNeedsDgs(checked),
+    []
+  );
+  const handleDateChange = useCallback((date) => {
+    if (date) setEditedDate(date);
+  }, []);
+  const handleServiceInfoToggle = useCallback((serviceId, checked) => {
+    setEditedServicesInfo((prev) =>
+      checked ? [...prev, serviceId] : prev.filter((id) => id !== serviceId)
+    );
+  }, []);
+  const handleServiceSuiviToggle = useCallback((serviceId, checked) => {
+    setEditedServicesSuivi((prev) =>
+      checked ? [...prev, serviceId] : prev.filter((id) => id !== serviceId)
+    );
+  }, []);
+  const handleCouncilToggle = useCallback((memberId, checked) => {
+    setEditedCouncilIds((prev) =>
+      checked ? [...prev, memberId] : prev.filter((id) => id !== memberId)
+    );
+  }, []);
+
+  // ---------- BADGES & RENDERS ----------
   const getStatusBadges = (item: MailInItem) => {
     const badges = [];
     if (item.needsMayor)
@@ -192,7 +286,6 @@ export function HistoryTable({
     return badges;
   };
 
-  // NOUVEAU : helpers pour colonnes INFO et SUIVI
   const getServicesByType = (
     services: MailInItem["services"],
     type: "INFO" | "SUIVI"
@@ -201,6 +294,16 @@ export function HistoryTable({
     return services
       .filter((s) => s.type === type)
       .map((s) => s.service.code)
+      .filter(Boolean);
+  };
+  const getServicesByTypeIds = (
+    services: MailInItem["services"],
+    type: "INFO" | "SUIVI"
+  ) => {
+    if (!services) return [];
+    return services
+      .filter((s) => s.type === type)
+      .map((s) => s.service.id)
       .filter(Boolean);
   };
 
@@ -247,32 +350,387 @@ export function HistoryTable({
     );
   };
 
-  const handleOpenDetails = (item: MailInItem) => {
+  // ---------- EDITION ----------
+  const handleOpenDetails = useCallback((item: MailInItem) => {
     setSelectedItem(item);
     setDrawerOpen(true);
     setEditMode(false);
     setEditedSubject(item.subject);
-  };
+  }, []);
 
-  const handleOpenEdit = (item: MailInItem) => {
+  const handleOpenEdit = useCallback((item: MailInItem) => {
     setSelectedItem(item);
     setDrawerOpen(true);
     setEditMode(true);
     setEditedSubject(item.subject);
-  };
-
-  const handleSaveEdit = () => {
-    if (!selectedItem) return;
-    setMailItems((prev) =>
-      prev.map((itm) =>
-        itm.id === selectedItem.id ? { ...itm, subject: editedSubject } : itm
-      )
+    setEditedNeedsMayor(item.needsMayor);
+    setEditedNeedsDgs(item.needsDgs);
+    setEditedDate(new Date(item.date));
+    setEditedServicesInfo(getServicesByTypeIds(item.services, "INFO"));
+    setEditedServicesSuivi(getServicesByTypeIds(item.services, "SUIVI"));
+    setEditedCouncilIds(
+      item.copies?.map((copy) => copy.council?.id).filter(Boolean) as number[]
     );
-    setSelectedItem({ ...selectedItem, subject: editedSubject });
-    setEditMode(false);
-  };
+    const expediteur = item.recipients?.[0]?.contact?.name || "";
+    setEditedExpediteur(expediteur);
+  }, []);
 
-  const renderDrawerContent = () => {
+  const handleSaveEdit = useCallback(async () => {
+    if (!selectedItem) return;
+    try {
+      let expediteurId = null;
+      const trimmedExp = editedExpediteur.trim();
+      if (trimmedExp) {
+        const existing = contactsData.find(
+          (c) => c.name.toLowerCase() === trimmedExp.toLowerCase()
+        );
+        if (existing) expediteurId = existing.id;
+        else {
+          const response = await fetch("/api/contacts-in", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: trimmedExp }),
+          });
+          const result = await response.json();
+          if (result.success) expediteurId = result.data.id;
+        }
+      }
+
+      const serviceDestinations = [
+        ...editedServicesInfo.map((serviceId) => ({
+          serviceId,
+          type: "INFO" as const,
+        })),
+        ...editedServicesSuivi
+          .filter((sid) => !editedServicesInfo.includes(sid))
+          .map((serviceId) => ({ serviceId, type: "SUIVI" as const })),
+      ];
+      const updateData = {
+        date: editedDate,
+        subject: editedSubject,
+        needsMayor: editedNeedsMayor,
+        needsDgs: editedNeedsDgs,
+        serviceDestinations,
+        councilIds: editedCouncilIds,
+        contactIds: expediteurId ? [expediteurId] : [],
+      };
+      const response = await fetch(`/api/mail-in/${selectedItem.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updateData),
+      });
+      const result = await response.json();
+      if (result.success) {
+        setMailItems((prevItems) =>
+          prevItems.map((item) =>
+            item.id === selectedItem.id ? { ...item, ...result.data } : item
+          )
+        );
+        setEditMode(false);
+        toast.success("Courrier modifié avec succès !");
+      } else {
+        throw new Error(result.message || "Erreur lors de la modification");
+      }
+    } catch (error: any) {
+      console.error("Erreur lors de la sauvegarde:", error);
+      toast.error(error.message || "Erreur lors de la modification");
+    }
+  }, [
+    selectedItem,
+    editedExpediteur,
+    contactsData,
+    editedServicesInfo,
+    editedServicesSuivi,
+    editedCouncilIds,
+    editedDate,
+    editedSubject,
+    editedNeedsMayor,
+    editedNeedsDgs,
+  ]);
+
+  // ---------- VIEW DETAILS MEMO ----------
+  const ViewDetails = useMemo(() => {
+    if (!selectedItem) {
+      return null;
+    }
+    return (
+      <div>
+        <div className="p-6 space-y-4">
+          <div className="flex gap-6">
+            <div className="min-w-[110px] text-muted-foreground font-medium">
+              Date :
+            </div>
+            <div>
+              {selectedItem.date ? (
+                format(new Date(selectedItem.date), "dd MMM yyyy", {
+                  locale: fr,
+                })
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              )}
+            </div>
+          </div>
+          <Separator />
+          <div className="flex gap-6">
+            <div className="min-w-[110px] text-muted-foreground font-medium">
+              Objet :
+            </div>
+            <div>
+              {selectedItem.subject ?? (
+                <span className="text-muted-foreground">—</span>
+              )}
+            </div>
+          </div>
+          <Separator />
+          <div className="flex gap-6">
+            <div className="min-w-[110px] text-muted-foreground font-medium">
+              Statut :
+            </div>
+            <div className="flex gap-2">{getStatusBadges(selectedItem)}</div>
+          </div>
+          <Separator />
+          <div className="flex gap-6">
+            <div className="min-w-[110px] text-muted-foreground font-medium">
+              INFO :
+            </div>
+            <div>
+              {renderServiceBadges(
+                getServicesByType(selectedItem.services, "INFO")
+              )}
+            </div>
+          </div>
+          <Separator />
+          <div className="flex gap-6">
+            <div className="min-w-[110px] text-muted-foreground font-medium">
+              SUIVI :
+            </div>
+            <div>
+              {renderServiceBadges(
+                getServicesByType(selectedItem.services, "SUIVI")
+              )}
+            </div>
+          </div>
+          <Separator />
+          <div className="flex gap-6">
+            <div className="min-w-[110px] text-muted-foreground font-medium">
+              Élus :
+            </div>
+            <div>{renderCopies(selectedItem)}</div>
+          </div>
+          <Separator />
+          <div className="flex gap-6">
+            <div className="min-w-[110px] text-muted-foreground font-medium">
+              Expéditeurs :
+            </div>
+            <div>{renderRecipients(selectedItem)}</div>
+          </div>
+        </div>
+        <DrawerFooter className="gap-2 pb-6">
+          <LoadIfAdmin>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => setEditMode(true)}
+            >
+              <Pencil className="inline w-4 h-4 mr-2" />
+              Modifier
+            </Button>
+          </LoadIfAdmin>
+          <Button
+            type="button"
+            variant="secondary"
+            className="w-full"
+            onClick={() => setDrawerOpen(false)}
+          >
+            Fermer
+          </Button>
+        </DrawerFooter>
+      </div>
+    );
+  }, [selectedItem]);
+
+  // ---------- EDIT FORM MEMO ----------
+  const EditForm = useMemo(
+    () => (
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSaveEdit();
+        }}
+        autoComplete="off"
+      >
+        <div className="p-6 flex flex-col gap-6 max-h-[50vh] overflow-y-auto">
+          {/* Date */}
+          <div className="space-y-2">
+            <Label className="font-medium text-sm text-muted-foreground">
+              Date :
+            </Label>
+            <Drawer open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <DrawerTrigger asChild>
+                <Button
+                  variant="outline"
+                  type="button"
+                  className="w-full justify-start"
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {format(editedDate, "PPP", { locale: fr })}
+                </Button>
+              </DrawerTrigger>
+              <DrawerContent>
+                <DrawerHeader>
+                  <DrawerTitle>Sélectionner la date</DrawerTitle>
+                </DrawerHeader>
+                <div className="p-4 flex justify-center">
+                  <Calendar
+                    mode="single"
+                    selected={editedDate}
+                    onSelect={(date) => {
+                      handleDateChange(date);
+                      setCalendarOpen(false);
+                    }}
+                    locale={fr}
+                    initialFocus
+                  />
+                </div>
+              </DrawerContent>
+            </Drawer>
+          </div>
+          {/* Expéditeur Champ Unique */}
+          <div className="space-y-3">
+            <Label className="font-medium text-sm text-muted-foreground">
+              Expéditeur :
+            </Label>
+            <Input
+              value={editedExpediteur}
+              onChange={handleExpediteurChange}
+              placeholder="Nom de l'expéditeur..."
+            />
+          </div>
+          {/* Objet */}
+          <div className="space-y-2">
+            <Label className="font-medium text-sm text-muted-foreground">
+              Objet :
+            </Label>
+            <Input
+              value={editedSubject}
+              onChange={handleSubjectChange}
+              placeholder="Objet du courrier"
+            />
+          </div>
+          {/* Services */}
+          <div className="space-y-3">
+            <Label className="font-medium text-sm text-muted-foreground">
+              Services :
+            </Label>
+            <div className="grid gap-3">
+              {servicesData.map((service) => (
+                <div
+                  key={service.id}
+                  className="flex items-center justify-between p-3 border rounded-lg"
+                >
+                  <div className="font-medium">{service.name}</div>
+                  <div className="flex gap-4">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={editedServicesInfo.includes(service.id)}
+                        onCheckedChange={(checked) =>
+                          handleServiceInfoToggle(service.id, checked)
+                        }
+                        className="data-[state=checked]:bg-green-500"
+                      />
+                      <span className="text-xs text-green-700 font-medium">
+                        INFO
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={editedServicesSuivi.includes(service.id)}
+                        onCheckedChange={(checked) =>
+                          handleServiceSuiviToggle(service.id, checked)
+                        }
+                        className="data-[state=checked]:bg-blue-600"
+                      />
+                      <span className="text-xs text-blue-600 font-medium">
+                        SUIVI
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Élus */}
+          <div className="space-y-3">
+            <Label className="font-medium text-sm text-muted-foreground">
+              Élus :
+            </Label>
+            <div className="grid gap-2">
+              {councilData.map((member) => (
+                <div
+                  key={member.id}
+                  className="flex items-center justify-between p-3 border rounded-lg"
+                >
+                  <div>
+                    <div className="font-medium">
+                      {member.firstName} {member.lastName}
+                    </div>
+                    {member.position && (
+                      <div className="text-sm text-muted-foreground">
+                        {member.position}
+                      </div>
+                    )}
+                  </div>
+                  <Switch
+                    checked={editedCouncilIds.includes(member.id)}
+                    onCheckedChange={(checked) =>
+                      handleCouncilToggle(member.id, checked)
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <DrawerFooter className="gap-2 pb-6">
+          <Button type="submit" className="w-full">
+            Sauvegarder
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            className="w-full"
+            onClick={() => setEditMode(false)}
+          >
+            Annuler
+          </Button>
+        </DrawerFooter>
+      </form>
+    ),
+    [
+      calendarOpen,
+      editedDate,
+      handleDateChange,
+      editedExpediteur,
+      handleExpediteurChange,
+      editedSubject,
+      handleSubjectChange,
+      servicesData,
+      editedServicesInfo,
+      handleServiceInfoToggle,
+      editedServicesSuivi,
+      handleServiceSuiviToggle,
+      councilData,
+      editedCouncilIds,
+      handleCouncilToggle,
+      handleSaveEdit,
+      setCalendarOpen,
+      setEditMode,
+    ]
+  );
+
+  // ---------- RENDER DRAWER CONTENT ----------
+  const renderDrawerContent = useCallback(() => {
     if (!selectedItem) return null;
     return (
       <DrawerContent>
@@ -280,142 +738,23 @@ export function HistoryTable({
           <DrawerTitle className="text-lg flex items-center gap-2">
             {editMode ? (
               <>
-                <Pencil className="inline w-5 h-5 text-primary" />
-                Modifier le courrier
+                <Pencil className="inline w-5 h-5 text-primary" /> Modifier le
+                courrier
               </>
             ) : (
               <>
-                <Eye className="inline w-5 h-5 text-primary" />
-                Détails du courrier
+                <Eye className="inline w-5 h-5 text-primary" /> Détails du
+                courrier
               </>
             )}
           </DrawerTitle>
         </DrawerHeader>
-        {editMode ? (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSaveEdit();
-            }}
-          >
-            <div className="p-6 flex flex-col gap-4">
-              <label className="flex flex-col gap-1 font-medium text-sm text-muted-foreground">
-                Objet :
-                <Input
-                  value={editedSubject}
-                  onChange={(e) => setEditedSubject(e.target.value)}
-                  className="mt-1"
-                />
-              </label>
-              {/* Ajoute d'autres inputs stylés ici */}
-            </div>
-            <DrawerFooter className="gap-2 pb-6">
-              <Button type="submit" className="w-full">
-                Sauvegarder
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full"
-                onClick={() => setEditMode(false)}
-              >
-                Annuler
-              </Button>
-            </DrawerFooter>
-          </form>
-        ) : (
-          <div>
-            <div className="p-6 space-y-4">
-              <div className="flex gap-6">
-                <div className="min-w-[110px] text-muted-foreground font-medium">
-                  Date :
-                </div>
-                <div>
-                  {format(new Date(selectedItem.date), "dd MMM yyyy", {
-                    locale: fr,
-                  })}
-                </div>
-              </div>
-              <Separator />
-              <div className="flex gap-6">
-                <div className="min-w-[110px] text-muted-foreground font-medium">
-                  Objet :
-                </div>
-                <div>{selectedItem.subject}</div>
-              </div>
-              <Separator />
-              <div className="flex gap-6">
-                <div className="min-w-[110px] text-muted-foreground font-medium">
-                  Statut :
-                </div>
-                <div className="flex gap-2">
-                  {getStatusBadges(selectedItem)}
-                </div>
-              </div>
-              <Separator />
-              <div className="flex gap-6">
-                <div className="min-w-[110px] text-muted-foreground font-medium">
-                  INFO :
-                </div>
-                <div>
-                  {renderServiceBadges(
-                    getServicesByType(selectedItem.services, "INFO")
-                  )}
-                </div>
-              </div>
-              <Separator />
-              <div className="flex gap-6">
-                <div className="min-w-[110px] text-muted-foreground font-medium">
-                  SUIVI :
-                </div>
-                <div>
-                  {renderServiceBadges(
-                    getServicesByType(selectedItem.services, "SUIVI")
-                  )}
-                </div>
-              </div>
-              <Separator />
-              <div className="flex gap-6">
-                <div className="min-w-[110px] text-muted-foreground font-medium">
-                  Élus :
-                </div>
-                <div>{renderCopies(selectedItem)}</div>
-              </div>
-              <Separator />
-              <div className="flex gap-6">
-                <div className="min-w-[110px] text-muted-foreground font-medium">
-                  Expéditeurs :
-                </div>
-                <div>{renderRecipients(selectedItem)}</div>
-              </div>
-            </div>
-            <DrawerFooter className="gap-2 pb-6">
-              <LoadIfAdmin>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setEditMode(true)}
-                >
-                  <Pencil className="inline w-4 h-4 mr-2" />
-                  Modifier
-                </Button>
-              </LoadIfAdmin>
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full"
-                onClick={() => setDrawerOpen(false)}
-              >
-                Fermer
-              </Button>
-            </DrawerFooter>
-          </div>
-        )}
+        {editMode ? EditForm : ViewDetails}
       </DrawerContent>
     );
-  };
+  }, [selectedItem, editMode, EditForm, ViewDetails]);
 
+  // ---------- RENDU PRINCIPAL ----------
   if (loading || status === "loading") {
     return (
       <div className="text-center py-8 text-muted-foreground">
@@ -468,9 +807,6 @@ export function HistoryTable({
             <TableHead className="text-foreground font-semibold">
               Objet
             </TableHead>
-            {/* <TableHead className="text-foreground font-semibold">
-              Statut
-            </TableHead> */}
             <TableHead className="text-foreground font-semibold">
               INFO
             </TableHead>
@@ -508,16 +844,6 @@ export function HistoryTable({
                   {item.subject}
                 </div>
               </TableCell>
-              {/* <TableCell>
-                <div className="flex flex-wrap gap-1">
-                  {getStatusBadges(item)}
-                  {!item.needsMayor && !item.needsDgs && (
-                    <Badge variant="outline" className="text-muted-foreground">
-                      Standard
-                    </Badge>
-                  )}
-                </div>
-              </TableCell> */}
               <TableCell>
                 {renderServiceBadges(getServicesByType(item.services, "INFO"))}
               </TableCell>
@@ -530,7 +856,7 @@ export function HistoryTable({
                 </div>
                 {renderCopies(item)}
                 <div className="mt-1 mb-1 font-semibold text-xs text-muted-foreground">
-                  Expéditeurs :
+                  Expéditeurs :
                 </div>
                 {renderRecipients(item)}
               </TableCell>
@@ -553,16 +879,14 @@ export function HistoryTable({
                       className="hover:bg-accent"
                       onClick={() => handleOpenDetails(item)}
                     >
-                      <Eye className="mr-2 h-4 w-4" />
-                      Voir détails
+                      <Eye className="mr-2 h-4 w-4" /> Voir détails
                     </DropdownMenuItem>
                     <LoadIfAdmin>
                       <DropdownMenuItem
                         className="hover:bg-accent"
                         onClick={() => handleOpenEdit(item)}
                       >
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Modifier
+                        <Pencil className="mr-2 h-4 w-4" /> Modifier
                       </DropdownMenuItem>
                     </LoadIfAdmin>
                   </DropdownMenuContent>
@@ -572,7 +896,11 @@ export function HistoryTable({
           ))}
         </TableBody>
       </Table>
-      <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+      <Drawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        key={selectedItem?.id || "drawer"}
+      >
         {renderDrawerContent()}
       </Drawer>
     </div>
