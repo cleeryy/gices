@@ -354,7 +354,7 @@ export function HistoryFilters({ onFiltersChange }: HistoryFiltersProps) {
       </div>
 
       {/* Boolean filters */}
-      <div className="flex flex-wrap items-center gap-4 p-4 border rounded-lg bg-muted/50 border-border">
+      {/* <div className="flex flex-wrap items-center gap-4 p-4 border rounded-lg bg-muted/50 border-border">
         <div className="flex items-center space-x-2">
           <Switch
             id="needsMayor"
@@ -375,7 +375,7 @@ export function HistoryFilters({ onFiltersChange }: HistoryFiltersProps) {
           />
           <Label htmlFor="needsDgs">DGS requis</Label>
         </div>
-      </div>
+      </div> */}
 
       {/* Active filters badges */}
       {hasActiveFilters && (
