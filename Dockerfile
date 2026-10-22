@@ -50,10 +50,11 @@ COPY --from=build --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules
 # exists). A partial COPY of node_modules/prisma is NOT sufficient: prisma@6.x
 # depends on top-level packages (@prisma/config -> c12, effect, deepmerge-ts,
 # read-package-up, plus their transitive deps), so hand-copying is fragile.
-# A targeted build-time install of the exact pinned version lets npm resolve
-# the full closure; the runtime then needs no network.
+# A targeted build-time install driven by the committed lockfile (prisma is
+# pinned exact in package.json/package-lock.json), so the full closure is
+# integrity-checked and reproducible; --omit=dev keeps the runtime tree small.
 COPY --chown=nextjs:nodejs package.json package-lock.json ./
-RUN npm install --no-save --no-package-lock --no-audit --no-fund prisma@6.13.0 \
+RUN npm install --omit=dev --no-save --no-audit --no-fund \
   && chown -R nextjs:nodejs /app/node_modules /app/prisma
 
 # Entrypoint: migrations first (fail-fast), then exec the CMD
