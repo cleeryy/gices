@@ -40,14 +40,30 @@ COPY --from=build --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=build --chown=nextjs:nodejs /app/public ./public
 
-# Copy Prisma files (AJOUT IMPORTANT)
-COPY --from=build /app/prisma ./prisma/
-COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=build /app/node_modules/@prisma ./node_modules/@prisma
+# Copy Prisma files (schema + generated client)
+COPY --from=build --chown=nextjs:nodejs /app/prisma ./prisma/
+COPY --from=build --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=build --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+
+# Embed the pinned Prisma CLI at build time so `migrate deploy` runs offline
+# without npx (npx would resolve the v8 unified CLI where `migrate` no longer
+# exists). A partial COPY of node_modules/prisma is NOT sufficient: prisma@6.x
+# depends on top-level packages (@prisma/config -> c12, effect, deepmerge-ts,
+# read-package-up, plus their transitive deps), so hand-copying is fragile.
+# A targeted build-time install of the exact pinned version lets npm resolve
+# the full closure; the runtime then needs no network.
+COPY --chown=nextjs:nodejs package.json package-lock.json ./
+RUN npm install --no-save --no-package-lock --no-audit --no-fund prisma@6.13.0 \
+  && chown -R nextjs:nodejs /app/node_modules /app/prisma
+
+# Entrypoint: migrations first (fail-fast), then exec the CMD
+COPY --chown=nextjs:nodejs docker-entrypoint.sh ./
+RUN chmod +x ./docker-entrypoint.sh
 
 USER nextjs
 
 EXPOSE 3000
 
 ENV HOSTNAME="0.0.0.0"
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["node", "server.js"]
