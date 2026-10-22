@@ -23,6 +23,13 @@ RUN npx prisma generate
 # Build the application
 RUN npm run build
 
+# Production runtime dependencies: locked install without devDeps.
+# `prisma` is an exact production dependency, so `npm ci --omit=dev`
+# installs the full CLI closure (integrity-checked via the lockfile).
+FROM base AS production-deps
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --no-audit --no-fund
+
 # Production stage
 FROM base AS production
 ENV NODE_ENV=production
@@ -40,22 +47,15 @@ COPY --from=build --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=build --chown=nextjs:nodejs /app/public ./public
 
-# Copy Prisma files (schema + generated client)
+# Copy Prisma schema (migrations run from here at container start)
 COPY --from=build --chown=nextjs:nodejs /app/prisma ./prisma/
-COPY --from=build --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=build --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 
-# Embed the pinned Prisma CLI at build time so `migrate deploy` runs offline
-# without npx (npx would resolve the v8 unified CLI where `migrate` no longer
-# exists). A partial COPY of node_modules/prisma is NOT sufficient: prisma@6.x
-# depends on top-level packages (@prisma/config -> c12, effect, deepmerge-ts,
-# read-package-up, plus their transitive deps), so hand-copying is fragile.
-# A targeted build-time install driven by the committed lockfile (prisma is
-# pinned exact in package.json/package-lock.json), so the full closure is
-# integrity-checked and reproducible; --omit=dev keeps the runtime tree small.
-COPY --chown=nextjs:nodejs package.json package-lock.json ./
-RUN npm install --omit=dev --no-save --no-audit --no-fund \
-  && chown -R nextjs:nodejs /app/node_modules /app/prisma
+# Runtime node_modules comes from the locked production-deps stage
+# (standalone server needs its traced deps; prisma CLI needs its closure).
+# Then overlay the generated client AFTER: `npm ci` recreates node_modules,
+# so the overlay must come last, never before an install.
+COPY --from=production-deps --chown=nextjs:nodejs /app/node_modules ./node_modules
+COPY --from=build --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 
 # Entrypoint: migrations first (fail-fast), then exec the CMD
 COPY --chown=nextjs:nodejs docker-entrypoint.sh ./
