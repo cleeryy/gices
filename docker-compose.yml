@@ -33,7 +33,10 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: sh -c "npx prisma migrate deploy && node server.js"
+    # No `command:` override: the image ENTRYPOINT already runs
+    # `prisma migrate deploy` (embedded pinned CLI, offline-safe, fail-fast)
+    # before starting the server. Keeping startup logic in the image means
+    # Portainer stacks inheriting the image get it with nothing to rebuild.
     networks:
       - default
 
